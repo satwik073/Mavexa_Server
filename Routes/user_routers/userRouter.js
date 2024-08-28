@@ -7,4 +7,7 @@ const router = (0, express_1.Router)();
 router.post('/register/user', userControllersGenerated_1.letting_user_registered);
 router.post('/login/user', userControllersGenerated_1.letting_user_login);
 router.post('/verify-email', Auth_1.is_authenticated_user, userControllersGenerated_1.verify_email_provided_user);
+router.get('/user/profile', Auth_1.is_authenticated_user, userControllersGenerated_1.get_user_profile);
+router.put('/user/reverification', Auth_1.is_authenticated_user, userControllersGenerated_1.resend_otp_for_verification_request);
+router.put('/user/reset-password', Auth_1.is_authenticated_user, userControllersGenerated_1.reset_password_for_verified_user);
 exports.default = router;

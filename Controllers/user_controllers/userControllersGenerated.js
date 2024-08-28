@@ -12,10 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
+exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const EmailServices_1 = require("../../Services/EmailServices");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -118,3 +118,87 @@ const verify_email_provided_user = (request, response) => __awaiter(void 0, void
     }
 });
 exports.verify_email_provided_user = verify_email_provided_user;
+const resend_otp_for_verification_request = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const fetched_loggedin_user = request.user;
+        if (!fetched_loggedin_user)
+            throw new Error("User not found");
+        if (!fetched_loggedin_user.is_user_verified) {
+            const redefining_otp_generation = Math.floor(100000 + Math.random() * 900000).toString();
+            fetched_loggedin_user.otp_for_verification = redefining_otp_generation;
+            yield fetched_loggedin_user.save();
+            yield (0, EmailServices_1.email_service_enabled)({
+                senders_email: process.env.SENDER_EMAIL || '',
+                recievers_email: fetched_loggedin_user.registered_user_email,
+                otp_for_verfication: fetched_loggedin_user.otp_for_verification,
+                product_by_company: process.env.PRODUCT_NAME || '',
+                recievers_username: fetched_loggedin_user.registered_username
+            });
+            return response.status(200).json({
+                success: true,
+                message: "OTP sent successfully",
+                updated_user_profile_otp: fetched_loggedin_user
+            });
+        }
+        else {
+            return response.status(400).json({ Error: "User already verified" });
+        }
+    }
+    catch (error_value_displayed) {
+        console.error(error_value_displayed);
+        return response.status(500).json({
+            Error: 'Something went wrong, try again later',
+            details: error_value_displayed.message
+        });
+    }
+});
+exports.resend_otp_for_verification_request = resend_otp_for_verification_request;
+const reset_password_for_verified_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const fetched_loggedin_user = request.user;
+        if (!fetched_loggedin_user)
+            throw new Error("User not found");
+        if (fetched_loggedin_user.is_user_verified) {
+            const { registered_user_password } = request.body;
+            const is_same_password_for_user = yield bcrypt.compare(registered_user_password, fetched_loggedin_user.registered_user_password);
+            if (!is_same_password_for_user) {
+                const salted_credentials = yield bcrypt.genSalt(10);
+                const hashed_password_generated = yield bcrypt.hash(registered_user_password, salted_credentials);
+                fetched_loggedin_user.registered_user_password = hashed_password_generated;
+                yield fetched_loggedin_user.save();
+                return response.status(200).json({
+                    success: true,
+                    message: "Password Updated successfully",
+                    updated_user_profile_password: fetched_loggedin_user
+                });
+            }
+            else {
+                return response.status(400).json({ Error: "Password can't be same as previous password use different one" });
+            }
+        }
+        else {
+            return response.status(400).json({ Error: "Password can't be reset at this moment" });
+        }
+    }
+    catch (error_value_displayed) {
+        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error_value_displayed.message });
+    }
+});
+exports.reset_password_for_verified_user = reset_password_for_verified_user;
+const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const fetched_loggedin_user = request.user;
+        if (!fetched_loggedin_user)
+            throw new Error("User Can't found");
+        console.log(fetched_loggedin_user);
+        return response.status(200).json({
+            success: true,
+            message: "User Fetched successfuly",
+            userInfo: fetched_loggedin_user
+        });
+    }
+    catch (error_value_displayed) {
+        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error_value_displayed.message });
+    }
+});
+exports.get_user_profile = get_user_profile;
