@@ -12,6 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+require("./Common/instrument");
+const Sentry = require("@sentry/node");
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -28,6 +30,7 @@ if (!PORT_ESTAIBLISHED) {
 }
 else {
     app.use('/api/v1/', userRouter_1.default);
+    Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_config_1.default)();
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);

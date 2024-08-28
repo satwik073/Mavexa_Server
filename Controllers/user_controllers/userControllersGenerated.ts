@@ -215,3 +215,17 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
     }
 }
+
+export const get_all_registered_user_profile = async( request : Request , response : Response )=>{
+    try {
+        const collecting_total_data =  await user_detailed_description.find();
+        return response.status(200).json({
+            success: true ,
+            message : "all users data fetched successfully",
+            total_data : collecting_total_data
+        })
+
+    }catch{
+        return response.status(500).json({ Error: 'Something went wrong, try again later'})
+    }
+}

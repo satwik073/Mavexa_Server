@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import RolesSpecified from "../../Common/structure";
 
 
 interface stored_user_detailed_schema extends mongoose.Document {
@@ -7,6 +8,7 @@ interface stored_user_detailed_schema extends mongoose.Document {
     registered_username: string;
     otp_for_verification: string;
     is_user_verified: boolean;
+    authorities_provided_by_role : RolesSpecified;
     created_at: Date;
     updated_at: Date;
 }
@@ -24,6 +26,11 @@ const user_detailed_description_schema = new Schema({
     registered_username: {
         type: String,
         required: true,
+    },
+    authorities_provided_by_role :{
+        type: String,
+        enum : Object.values(RolesSpecified),
+        default : RolesSpecified.USER_DESC
     },
     otp_for_verification: {
         type: String,

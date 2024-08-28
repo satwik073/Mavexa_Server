@@ -22,8 +22,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const structure_1 = __importDefault(require("../../Common/structure"));
 const user_detailed_description_schema = new mongoose_1.Schema({
     registered_user_email: {
         type: String,
@@ -37,6 +41,11 @@ const user_detailed_description_schema = new mongoose_1.Schema({
     registered_username: {
         type: String,
         required: true,
+    },
+    authorities_provided_by_role: {
+        type: String,
+        enum: Object.values(structure_1.default),
+        default: structure_1.default.USER_DESC
     },
     otp_for_verification: {
         type: String,

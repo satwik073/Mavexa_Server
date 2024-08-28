@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
+exports.get_all_registered_user_profile = exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -202,3 +202,17 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.get_user_profile = get_user_profile;
+const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const collecting_total_data = yield UserRegisteringModal_1.default.find();
+        return response.status(200).json({
+            success: true,
+            message: "all users data fetched successfully",
+            total_data: collecting_total_data
+        });
+    }
+    catch (_a) {
+        return response.status(500).json({ Error: 'Something went wrong, try again later' });
+    }
+});
+exports.get_all_registered_user_profile = get_all_registered_user_profile;

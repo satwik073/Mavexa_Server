@@ -1,3 +1,5 @@
+require("./Common/instrument")
+const Sentry = require("@sentry/node");
 const express = require('express')
 import { configDotenv } from 'dotenv'
 const bodyParser = require('body-parser')
@@ -15,7 +17,7 @@ if (!PORT_ESTAIBLISHED) {
     console.log("Can't reach out to port");
 } else {
     app.use('/api/v1/', user_controlling_routes);
-
+    Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, async () => {
         await connection_DB_estaiblished();
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
