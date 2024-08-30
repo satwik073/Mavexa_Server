@@ -13,3 +13,4 @@ router.put(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, Auth_1
 router.put(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password, Auth_1.is_authenticated_user, userControllersGenerated_1.reset_password_for_verified_user);
 router.get(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_access_users, Auth_1.is_authenticated_user, userControllersGenerated_1.get_all_registered_user_profile);
 exports.default = router;
+//# sourceMappingURL=userRouter.js.map

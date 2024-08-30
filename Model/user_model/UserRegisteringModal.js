@@ -65,3 +65,4 @@ const user_detailed_description_schema = new mongoose_1.Schema({
 });
 const user_detailed_description = mongoose_1.default.model('Registration', user_detailed_description_schema);
 exports.default = user_detailed_description;
+//# sourceMappingURL=UserRegisteringModal.js.map

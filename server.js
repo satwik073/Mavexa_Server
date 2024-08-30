@@ -30,9 +30,13 @@ if (!PORT_ESTAIBLISHED) {
 }
 else {
     app.use('/api/v1/', userRouter_1.default);
+    app.get("/debug-sentry", function mainHandler(req, res) {
+        throw new Error("My first Sentry error!");
+      });
     Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_config_1.default)();
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
     }));
 }
+//# sourceMappingURL=server.js.map

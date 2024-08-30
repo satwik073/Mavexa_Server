@@ -5,13 +5,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "postinstall": "npm rebuild bcrypt"
+    "postinstall": "npm rebuild bcrypt",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org satwik-qv --project saasy-monitoring-responses ./ && sentry-cli sourcemaps upload --org satwik-qv --project saasy-monitoring-responses ./"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sentry/cli": "^2.34.0",
     "@sentry/node": "^8.27.0",
     "@sentry/profiling-node": "^8.27.0",
     "@types/nodemon": "^1.19.6",

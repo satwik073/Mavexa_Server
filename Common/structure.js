@@ -6,3 +6,4 @@ var RolesSpecified;
     RolesSpecified["USER_DESC"] = "user";
 })(RolesSpecified || (RolesSpecified = {}));
 exports.default = RolesSpecified;
+//# sourceMappingURL=structure.js.map

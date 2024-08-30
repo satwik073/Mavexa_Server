@@ -47,7 +47,7 @@ Dockerfile
 Dockerfile.*
 
 # Miscellaneous
-.vscode/
+
 .idea/
 *.sublime-project
 *.sublime-workspace
@@ -69,3 +69,6 @@ ehthumbs.db
 *.seed
 *.pid.lock
 *.gz
+
+# Sentry Config File
+.sentryclirc

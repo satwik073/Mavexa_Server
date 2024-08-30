@@ -216,3 +216,4 @@ const get_all_registered_user_profile = (request, response) => __awaiter(void 0,
     }
 });
 exports.get_all_registered_user_profile = get_all_registered_user_profile;
+//# sourceMappingURL=userControllersGenerated.js.map
