@@ -16,19 +16,22 @@ exports.is_authenticated_user = void 0;
 const jwt = require('jsonwebtoken');
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const structure_1 = __importDefault(require("../../Common/structure"));
-const RoutesFormed_1 = require("../../Constants/RoutesFormed");
+const RoutesFormed_1 = require("../../Constants/RoutesDefined/RoutesFormed");
+const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
 const is_authenticated_user = (request, response, next_forward) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { authorization } = request.headers;
         if (authorization && authorization.startsWith("Bearer ")) {
             const fetching_token = authorization.split(" ")[1];
+            const modified_token_role = authorization.split(" ")[2];
             if (!fetching_token)
                 throw new Error("Token can't be fetched at this moment");
             const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
             if (!SECRET_KEY_FETCHED)
                 throw new Error("JWT Secret key not defined");
             const decoding_token_data = jwt.verify(fetching_token, SECRET_KEY_FETCHED);
-            const user = yield UserRegisteringModal_1.default.findById(decoding_token_data.id);
+            console.log(decoding_token_data);
+            const user = (modified_token_role === structure_1.default.USER_DESC) ? yield UserRegisteringModal_1.default.findById(decoding_token_data.id) : (modified_token_role === structure_1.default.ADMIN_DESC) ? yield AdminDataModel_1.default.findById(decoding_token_data.id) : null;
             if (!user) {
                 return response.status(401).json({ Error: "User not found" });
             }

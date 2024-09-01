@@ -2,14 +2,16 @@ import { NextFunction, Request, Response } from 'express';
 const jwt = require('jsonwebtoken');
 import user_detailed_description from '../../Model/user_model/UserRegisteringModal';
 import RolesSpecified from '../../Common/structure';
-import { ADMIN_SUPPORT_CONFIGURATION, USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesFormed';
+import { ADMIN_SUPPORT_CONFIGURATION , USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesDefined/RoutesFormed';
+import admin_detailed_structure_description from '../../Model/admin_model/AdminDataModel';
 
 interface AuthenticatedRequest extends Request {
     user?: any;
 }
 
 interface DecodedTokenData {
-    id: string;
+    [x: string]: RolesSpecified;
+    id: RolesSpecified;
 }
 
 export const is_authenticated_user = async (request: Request, response: Response, next_forward: NextFunction) => {
@@ -18,14 +20,16 @@ export const is_authenticated_user = async (request: Request, response: Response
 
         if (authorization && authorization.startsWith("Bearer ")) {
             const fetching_token = authorization.split(" ")[1];
+            const modified_token_role = authorization.split(" ")[2];
             if (!fetching_token) throw new Error("Token can't be fetched at this moment");
 
             const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
             if (!SECRET_KEY_FETCHED) throw new Error("JWT Secret key not defined");
 
             const decoding_token_data = jwt.verify(fetching_token, SECRET_KEY_FETCHED) as DecodedTokenData;
-
-            const user = await user_detailed_description.findById(decoding_token_data.id);
+            console.log(decoding_token_data)
+            
+            const  user =  (modified_token_role === RolesSpecified.USER_DESC) ? await user_detailed_description.findById(decoding_token_data.id) : (modified_token_role === RolesSpecified.ADMIN_DESC) ? await admin_detailed_structure_description.findById(decoding_token_data.id) : null
             if (!user) {
                 return response.status(401).json({ Error: "User not found" });
             }

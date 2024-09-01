@@ -19,6 +19,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
+const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./DB/DB/db_config"));
 const app = express();
 app.use(bodyParser.json());
@@ -30,9 +31,7 @@ if (!PORT_ESTAIBLISHED) {
 }
 else {
     app.use('/api/v1/', userRouter_1.default);
-    app.get("/debug-sentry", function mainHandler(req, res) {
-        throw new Error("My first Sentry error!");
-      });
+    app.use('/api/v1/controls', adminRoutes_1.default);
     Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, db_config_1.default)();

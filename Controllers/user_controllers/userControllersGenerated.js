@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -12,60 +35,55 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_all_registered_user_profile = exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
+exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const EmailServices_1 = require("../../Services/EmailServices");
+const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReducer");
+const structure_1 = __importStar(require("../../Common/structure"));
+const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
+const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { registered_username, registered_user_email, registered_user_password } = request.body;
-        if (!registered_user_email || !registered_user_password || !registered_username) {
-            return response.status(400).json({ Error: "All fields are required to register the user" });
-        }
-        const exisiting_user_found = yield UserRegisteringModal_1.default.findOne({ registered_user_email });
-        if (exisiting_user_found) {
-            return response.status(400).json({ Error: "User already exists, try registering with a different email" });
-        }
-        const otp_generating_code_block = Math.floor(100000 + Math.random() * 900000).toString();
-        const salted_credentials = yield bcrypt.genSalt(10);
-        const hashed_password_generated = yield bcrypt.hash(registered_user_password, salted_credentials);
-        const new_registered_user_defined = new UserRegisteringModal_1.default({
-            registered_user_email,
-            registered_username,
-            registered_user_password: hashed_password_generated,
-            otp_for_verification: otp_generating_code_block
-        });
-        yield new_registered_user_defined.save();
-        const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-        if (!SECRET_KEY_FETCHED)
-            throw new Error("JWT Secret key not defined");
-        const token_for_authentication_generated = jwt.sign({ id: new_registered_user_defined._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
-        yield (0, EmailServices_1.email_service_enabled)({
-            senders_email: process.env.SENDER_EMAIL || '',
-            recievers_email: new_registered_user_defined.registered_user_email,
-            otp_for_verfication: new_registered_user_defined.otp_for_verification,
-            product_by_company: process.env.PRODUCT_NAME || '',
-            recievers_username: new_registered_user_defined.registered_username
-        });
-        return response.status(200).json({
-            success: true,
-            message_Displayed: "User Registered Successfully",
-            userInfo: new_registered_user_defined,
-            token: token_for_authentication_generated
-        });
-    }
-    catch (error) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error.message });
-    }
+    const { registered_username, registered_user_email, registered_user_password } = request.body;
+    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password, registered_username }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
+    if (is_exists_missing_fields)
+        return is_exists_missing_fields;
+    yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC);
+    const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
+    const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_email);
+    const new_registered_user_defined = new UserRegisteringModal_1.default({
+        registered_user_email,
+        registered_username,
+        registered_user_password: hashed_password_generated,
+        otp_for_verification: otp_generating_code_block
+    });
+    yield new_registered_user_defined.save();
+    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
+    if (!SECRET_KEY_FETCHED)
+        throw new Error(PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
+    const token_for_authentication_generated = jwt.sign({ id: new_registered_user_defined._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
+    yield (0, EmailServices_1.email_service_enabled)({
+        senders_email: process.env.SENDER_EMAIL || '',
+        recievers_email: new_registered_user_defined.registered_user_email,
+        otp_for_verfication: new_registered_user_defined.otp_for_verification,
+        product_by_company: process.env.PRODUCT_NAME || '',
+        recievers_username: new_registered_user_defined.registered_username
+    });
+    return response.status(200).json({
+        success: true,
+        message_Displayed: "User Registered Successfully",
+        userInfo: new_registered_user_defined,
+        token: token_for_authentication_generated
+    });
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { registered_user_email, registered_user_password } = request.body;
-        if (!registered_user_email || !registered_user_password) {
-            return response.status(400).json({ Error: "All fields are required to login" });
-        }
+        const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_password, registered_user_email }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+        if (is_exists_missing_fields)
+            return is_exists_missing_fields;
         const exisiting_user_found = yield UserRegisteringModal_1.default.findOne({ registered_user_email });
         if (!exisiting_user_found) {
             return response.status(404).json({ Error: "User doesn't exist, try logging in with different credentials" });
@@ -202,18 +220,4 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.get_user_profile = get_user_profile;
-const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const collecting_total_data = yield UserRegisteringModal_1.default.find();
-        return response.status(200).json({
-            success: true,
-            message: "all users data fetched successfully",
-            total_data: collecting_total_data
-        });
-    }
-    catch (_a) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later' });
-    }
-});
-exports.get_all_registered_user_profile = get_all_registered_user_profile;
 //# sourceMappingURL=userControllersGenerated.js.map

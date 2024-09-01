@@ -4,6 +4,10 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs');
 
 import { email_service_enabled } from "../../Services/EmailServices";
+import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR } from "../../Middlewares/Error/ErrorHandlerReducer";
+import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
+import { OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
+import { ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 
 
 interface UserRegisterRequest {
@@ -24,18 +28,13 @@ interface UserVerificationMethod {
 }
 
 export const letting_user_registered = async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
-    try {
         const { registered_username, registered_user_email, registered_user_password } = request.body;
-        if (!registered_user_email || !registered_user_password || !registered_username) {
-            return response.status(400).json({ Error: "All fields are required to register the user" });
-        }
-        const exisiting_user_found = await user_detailed_description.findOne({ registered_user_email });
-        if (exisiting_user_found) {
-            return response.status(400).json({ Error: "User already exists, try registering with a different email" });
-        }
-        const otp_generating_code_block = Math.floor(100000 + Math.random() * 900000).toString();
-        const salted_credentials = await bcrypt.genSalt(10);
-        const hashed_password_generated = await bcrypt.hash(registered_user_password, salted_credentials);
+       const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({registered_user_email, registered_user_password , registered_username} , response, AuthTypeDeclared.USER_REGISTRATION)
+        if(is_exists_missing_fields) return is_exists_missing_fields
+       await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email , AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC)
+       const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
+       const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
+       
         const new_registered_user_defined = new user_detailed_description({
             registered_user_email,
             registered_username,
@@ -44,7 +43,7 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         });
         await new_registered_user_defined.save();
         const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-        if (!SECRET_KEY_FETCHED) throw new Error("JWT Secret key not defined");
+        if (!SECRET_KEY_FETCHED) throw new Error(ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
 
         const token_for_authentication_generated = jwt.sign(
             { id: new_registered_user_defined._id },
@@ -64,18 +63,13 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
             userInfo: new_registered_user_defined,
             token: token_for_authentication_generated
         });
-
-    } catch (error) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error as Error).message });
-    }
 }
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
     try {
         const { registered_user_email, registered_user_password } = request.body;
-        if (!registered_user_email || !registered_user_password) {
-            return response.status(400).json({ Error: "All fields are required to login" });
-        }
+       const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({registered_user_password , registered_user_email} , response , AuthTypeDeclared.USER_LOGIN)
+       if(is_exists_missing_fields) return is_exists_missing_fields
         const exisiting_user_found = await user_detailed_description.findOne({ registered_user_email });
         if (!exisiting_user_found) {
             return response.status(404).json({ Error: "User doesn't exist, try logging in with different credentials" });
@@ -213,19 +207,5 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
         })
     } catch (error_value_displayed) {
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
-    }
-}
-
-export const get_all_registered_user_profile = async( request : Request , response : Response )=>{
-    try {
-        const collecting_total_data =  await user_detailed_description.find();
-        return response.status(200).json({
-            success: true ,
-            message : "all users data fetched successfully",
-            total_data : collecting_total_data
-        })
-
-    }catch{
-        return response.status(500).json({ Error: 'Something went wrong, try again later'})
     }
 }

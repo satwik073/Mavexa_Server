@@ -6,6 +6,7 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
 import user_controlling_routes from './Routes/user_routers/userRouter'
+import admin_controlling_routes from './Routes/admin_routes/adminRoutes'
 import connection_DB_estaiblished from './DB/DB/db_config'
 const app = express()
 app.use(bodyParser.json())
@@ -17,6 +18,7 @@ if (!PORT_ESTAIBLISHED) {
     console.log("Can't reach out to port");
 } else {
     app.use('/api/v1/', user_controlling_routes);
+    app.use('/api/v1/controls', admin_controlling_routes)
     Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, async () => {
         await connection_DB_estaiblished();
