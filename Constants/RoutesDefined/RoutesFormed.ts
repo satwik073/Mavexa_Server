@@ -9,6 +9,8 @@ interface DEFAULT_USER_AUTHENTICATION_AND_AUTHORIZATION_ROUTES_INTERFACE {
 
 interface ADMIN_AUTHENTICATION_AND_AUTHORIZATION_ROUTES_INTERFACE extends DEFAULT_USER_AUTHENTICATION_AND_AUTHORIZATION_ROUTES_INTERFACE {
     admin_access_users: string;
+    admin_registration_initialised : string;
+    admin_login_initailised: string
 }
 
 export const USER_SUPPORT_CONFIGURATION: DEFAULT_USER_AUTHENTICATION_AND_AUTHORIZATION_ROUTES_INTERFACE = {
@@ -23,4 +25,6 @@ export const USER_SUPPORT_CONFIGURATION: DEFAULT_USER_AUTHENTICATION_AND_AUTHORI
 export const ADMIN_SUPPORT_CONFIGURATION: ADMIN_AUTHENTICATION_AND_AUTHORIZATION_ROUTES_INTERFACE = {
     ...USER_SUPPORT_CONFIGURATION,
     admin_access_users: '/admin/access/users',
+    admin_registration_initialised : '/register/admin',
+    admin_login_initailised : '/login/admin'
 };

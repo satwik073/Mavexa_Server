@@ -9,6 +9,7 @@ import user_controlling_routes from './Routes/user_routers/userRouter'
 import admin_controlling_routes from './Routes/admin_routes/adminRoutes'
 import connection_DB_estaiblished from './DB/DB/db_config'
 const app = express()
+export const HTTPS_STATUS_CODE = require('http-status-codes')
 app.use(bodyParser.json())
 app.use(cors())
 

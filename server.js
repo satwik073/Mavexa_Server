@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.HTTPS_STATUS_CODE = void 0;
 require("./Common/instrument");
 const Sentry = require("@sentry/node");
 const express = require('express');
@@ -22,6 +23,7 @@ const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter")
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./DB/DB/db_config"));
 const app = express();
+exports.HTTPS_STATUS_CODE = require('http-status-codes');
 app.use(bodyParser.json());
 app.use(cors());
 dotenv.config();

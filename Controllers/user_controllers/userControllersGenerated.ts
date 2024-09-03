@@ -6,8 +6,9 @@ const bcrypt = require('bcryptjs');
 import { email_service_enabled } from "../../Services/EmailServices";
 import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR } from "../../Middlewares/Error/ErrorHandlerReducer";
 import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
-import { OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
+import { DECODING_INCOMING_SECURITY_PASSCODE, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
+import { HTTPS_STATUS_CODE } from "../../server";
 
 
 interface UserRegisterRequest {
@@ -66,38 +67,35 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
 }
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
-    try {
-        const { registered_user_email, registered_user_password } = request.body;
-       const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({registered_user_password , registered_user_email} , response , AuthTypeDeclared.USER_LOGIN)
-       if(is_exists_missing_fields) return is_exists_missing_fields
-        const exisiting_user_found = await user_detailed_description.findOne({ registered_user_email });
-        if (!exisiting_user_found) {
-            return response.status(404).json({ Error: "User doesn't exist, try logging in with different credentials" });
-        }
-        const decoded_password_stored = await bcrypt.compare(registered_user_password, exisiting_user_found.registered_user_password);
-        if (!decoded_password_stored) {
-            return response.status(401).json({ Error: "Invalid credentials, try using different ones" });
-        }
-        const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-        if (!SECRET_KEY_FETCHED) throw new Error("JWT Secret key not defined");
+    const { registered_user_email, registered_user_password } = request.body;
 
-        const token_for_authentication_generated = jwt.sign(
-            { id: exisiting_user_found._id },
-            SECRET_KEY_FETCHED,
-            { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' }
-        );
+    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_password, registered_user_email }, response, AuthTypeDeclared.USER_LOGIN);
+    if (is_exists_missing_fields) return is_exists_missing_fields;
+    const exisiting_user_found = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC);
 
-        return response.status(200).json({
-            success: true,
-            message: "User logged in successfully",
-            userInfo: exisiting_user_found,
-            token: token_for_authentication_generated
-        });
+    return !exisiting_user_found
+        ? response.status(404).json({ Error: "User not found." })
+        : 'registered_user_password' in exisiting_user_found
+            ? await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_password, exisiting_user_found.registered_user_password)
+                ? (() => {
+                    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
+                    if (!SECRET_KEY_FETCHED) return response.status(400).json((ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS))
+                    const token_for_authentication_generated = jwt.sign(
+                        { id: exisiting_user_found._id },
+                        SECRET_KEY_FETCHED,
+                        { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' }
+                    );
 
-    } catch (error) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error as Error).message });
-    }
-}
+                    return response.status(HTTPS_STATUS_CODE.OK).json({
+                        success: true,
+                        message: "User logged in successfully",
+                        userInfo: exisiting_user_found,
+                        token: token_for_authentication_generated
+                    });
+                })()
+                : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC))
+            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC));
+};
 
 
 
@@ -107,10 +105,9 @@ export const verify_email_provided_user = async (request: AuthenticatedRequest, 
         if (!otp_for_verification) {
             return response.status(400).json({ Error: "Please provide otp" });
         }
-        const stored_token_for_user_request = request.user.otp_for_verification;
+        const stored_token_for_user_request = await OTP_GENERATOR_CALLED(otp_for_verification, request.user.otp_for_verification)
 
         if (stored_token_for_user_request) {
-            if (+otp_for_verification === +stored_token_for_user_request) {
                 request.user.otp_for_verification = "";
                 request.user.is_user_verified = true;
 
@@ -120,9 +117,7 @@ export const verify_email_provided_user = async (request: AuthenticatedRequest, 
             } else {
                 return response.status(400).json({ Error: "Invalid OTP, please try again" });
             }
-        } else {
-            return response.status(400).json({ Error: "No OTP found for user, please request a new one" });
-        }
+        
     } catch (error_value_displayed) {
         console.error(error_value_displayed);
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });

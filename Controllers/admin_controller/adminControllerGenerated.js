@@ -35,15 +35,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_all_registered_user_profile = exports.authorized_admin_account = void 0;
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+exports.get_all_registered_user_profile = exports.authorized_admin_login = exports.authorized_admin_account = void 0;
 const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
 const structure_1 = __importStar(require("../../Common/structure"));
 const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReducer");
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
-const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
+const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
+const server_1 = require("../../server");
+const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 exports.authorized_admin_account = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_ESTAIBLISHED)((request, response) => __awaiter(void 0, void 0, void 0, function* () {
     const { admin_userEmail, admin_userName, admin_userPassword } = request.body;
     const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ admin_userEmail, admin_userName, admin_userPassword }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
@@ -53,16 +53,37 @@ exports.authorized_admin_account = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER
     const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(admin_userPassword);
     const admin_registration_data = new AdminDataModel_1.default({ admin_userEmail, admin_userName, admin_userPassword: hashed_password_generated });
     yield admin_registration_data.save();
-    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-    if (!SECRET_KEY_FETCHED)
-        throw new Error(PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
-    const token_for_authentication_generated = jwt.sign({ id: admin_registration_data._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
-    return response.status(200).json({
-        success: true,
-        message: "Admin Registered Successfully",
-        admin_data: admin_registration_data,
-        token_generated: token_for_authentication_generated
-    });
+    if (admin_registration_data) {
+        const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(admin_registration_data.id);
+        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+            success: true,
+            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.ADMIN_DESC),
+            admin_data: admin_registration_data,
+            token_generated: token_for_authentication_generated
+        });
+    }
+}));
+exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_ESTAIBLISHED)((request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    const { admin_userEmail, admin_userPassword } = request.body;
+    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ admin_userEmail, admin_userPassword }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+    if (is_exists_missing_fields)
+        return is_exists_missing_fields;
+    const is_admin_credentials_valid = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(admin_userEmail, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.ADMIN_DESC);
+    return !is_admin_credentials_valid
+        ? response.status(404).json({ Error: "User not found." })
+        : 'admin_userPassword' in is_admin_credentials_valid
+            ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(admin_userPassword, is_admin_credentials_valid.admin_userPassword))
+                ? (() => __awaiter(void 0, void 0, void 0, function* () {
+                    const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_admin_credentials_valid._id);
+                    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+                        success: true,
+                        message: "User logged in successfully",
+                        userInfo: is_admin_credentials_valid,
+                        token: token_for_authentication_generated
+                    });
+                }))()
+                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC))
+            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC));
 }));
 const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {

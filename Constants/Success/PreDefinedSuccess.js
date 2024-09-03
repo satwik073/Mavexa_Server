@@ -23,11 +23,23 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ERROR_VALUES_FETCHER = void 0;
+exports.SUCCESS_VALUES_FETCHER = void 0;
 const structure_1 = __importStar(require("../../Common/structure"));
-exports.ERROR_VALUES_FETCHER = {
-    EMPTY_FIELDS_VALIDATOR: (user_auth_type_specified) => ({
-        MESSAGE: `All fields are required to ${user_auth_type_specified.toLowerCase()} the user`
+exports.SUCCESS_VALUES_FETCHER = {
+    ENTITY_ONBOARDED_FULFILED: (user_auth_type_specified, user_role_specified) => ({
+        SUCCESS_MESSAGE: user_role_specified === structure_1.default.ADMIN_DESC
+            ? user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN
+                ? `${structure_1.default.ADMIN_DESC} ${structure_1.AuthTypeDeclared.USER_LOGIN} successful`
+                : user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION
+                    ? `${structure_1.default.ADMIN_DESC} ${structure_1.AuthTypeDeclared.USER_REGISTRATION} successfully`
+                    : null
+            : user_role_specified === structure_1.default.USER_DESC
+                ? user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN
+                    ? `${structure_1.default.USER_DESC} ${structure_1.AuthTypeDeclared.USER_LOGIN} successful`
+                    : user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION
+                        ? `${structure_1.default.USER_DESC} ${structure_1.AuthTypeDeclared.USER_REGISTRATION} successfully`
+                        : null
+                : null
     }),
     USER_FOUND_OR_NOT_CONTROLLED: (user_detected) => ({
         USER_LOGIN_MESSAGE: `User does not exists try ${structure_1.AuthTypeDeclared.USER_LOGIN} using different Credentials`,
@@ -40,4 +52,4 @@ exports.ERROR_VALUES_FETCHER = {
         INVALID_CREDENTIALS: (user_auth_type_specified === structure_1.default.USER_DESC) ? `${structure_1.default.USER_DESC.toLowerCase()} provided Invalid credentials, try using different ones` : `Invalid credentials, ${structure_1.default.ADMIN_DESC.toLowerCase()} cannot log in through this endpoint.`
     })
 };
-//# sourceMappingURL=PreDefinedErrors.js.map
+//# sourceMappingURL=PreDefinedSuccess.js.map

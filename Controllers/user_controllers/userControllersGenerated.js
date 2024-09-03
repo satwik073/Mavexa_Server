@@ -44,6 +44,7 @@ const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReduc
 const structure_1 = __importStar(require("../../Common/structure"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
+const server_1 = require("../../server");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     const { registered_username, registered_user_email, registered_user_password } = request.body;
     const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password, registered_username }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
@@ -79,33 +80,29 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { registered_user_email, registered_user_password } = request.body;
-        const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_password, registered_user_email }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
-        if (is_exists_missing_fields)
-            return is_exists_missing_fields;
-        const exisiting_user_found = yield UserRegisteringModal_1.default.findOne({ registered_user_email });
-        if (!exisiting_user_found) {
-            return response.status(404).json({ Error: "User doesn't exist, try logging in with different credentials" });
-        }
-        const decoded_password_stored = yield bcrypt.compare(registered_user_password, exisiting_user_found.registered_user_password);
-        if (!decoded_password_stored) {
-            return response.status(401).json({ Error: "Invalid credentials, try using different ones" });
-        }
-        const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-        if (!SECRET_KEY_FETCHED)
-            throw new Error("JWT Secret key not defined");
-        const token_for_authentication_generated = jwt.sign({ id: exisiting_user_found._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
-        return response.status(200).json({
-            success: true,
-            message: "User logged in successfully",
-            userInfo: exisiting_user_found,
-            token: token_for_authentication_generated
-        });
-    }
-    catch (error) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error.message });
-    }
+    const { registered_user_email, registered_user_password } = request.body;
+    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_password, registered_user_email }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+    if (is_exists_missing_fields)
+        return is_exists_missing_fields;
+    const exisiting_user_found = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+    return !exisiting_user_found
+        ? response.status(404).json({ Error: "User not found." })
+        : 'registered_user_password' in exisiting_user_found
+            ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, exisiting_user_found.registered_user_password))
+                ? (() => {
+                    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
+                    if (!SECRET_KEY_FETCHED)
+                        return response.status(400).json((PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS));
+                    const token_for_authentication_generated = jwt.sign({ id: exisiting_user_found._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
+                    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+                        success: true,
+                        message: "User logged in successfully",
+                        userInfo: exisiting_user_found,
+                        token: token_for_authentication_generated
+                    });
+                })()
+                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC))
+            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC));
 });
 exports.letting_user_login = letting_user_login;
 const verify_email_provided_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -114,20 +111,15 @@ const verify_email_provided_user = (request, response) => __awaiter(void 0, void
         if (!otp_for_verification) {
             return response.status(400).json({ Error: "Please provide otp" });
         }
-        const stored_token_for_user_request = request.user.otp_for_verification;
+        const stored_token_for_user_request = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(otp_for_verification, request.user.otp_for_verification);
         if (stored_token_for_user_request) {
-            if (+otp_for_verification === +stored_token_for_user_request) {
-                request.user.otp_for_verification = "";
-                request.user.is_user_verified = true;
-                yield request.user.save();
-                return response.status(200).json({ success: true, message: "Email verified successfully" });
-            }
-            else {
-                return response.status(400).json({ Error: "Invalid OTP, please try again" });
-            }
+            request.user.otp_for_verification = "";
+            request.user.is_user_verified = true;
+            yield request.user.save();
+            return response.status(200).json({ success: true, message: "Email verified successfully" });
         }
         else {
-            return response.status(400).json({ Error: "No OTP found for user, please request a new one" });
+            return response.status(400).json({ Error: "Invalid OTP, please try again" });
         }
     }
     catch (error_value_displayed) {

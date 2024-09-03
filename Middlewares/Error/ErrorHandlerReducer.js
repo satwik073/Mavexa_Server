@@ -58,14 +58,14 @@ const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression, response, user_au
 };
 exports.MISSING_FIELDS_VALIDATOR = MISSING_FIELDS_VALIDATOR;
 const EXISTING_USER_FOUND_IN_DATABASE = (user_registered_email, user_auth_type_specified, authorities_provided_by_role) => __awaiter(void 0, void 0, void 0, function* () {
-    const exisiting_user_found = (authorities_provided_by_role === structure_1.default.ADMIN_DESC) ? yield AdminDataModel_1.default.findOne({ admin_userEmail: user_registered_email }) : yield UserRegisteringModal_1.default.findOne({ registered_user_email: user_registered_email });
-    return (user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION && exisiting_user_found) ||
-        (user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION && exisiting_user_found)
+    const exisiting_user_found = authorities_provided_by_role === structure_1.default.ADMIN_DESC
+        ? yield AdminDataModel_1.default.findOne({ admin_userEmail: user_registered_email })
+        : yield UserRegisteringModal_1.default.findOne({ registered_user_email: user_registered_email });
+    return user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION && exisiting_user_found
         ? (() => { throw new UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_REGISTRATION_SUPPORT); })()
-        : (user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN && !exisiting_user_found) ||
-            (user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN && !exisiting_user_found)
+        : user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN && !exisiting_user_found
             ? (() => { throw new UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_LOGIN_MESSAGE); })()
-            : null;
+            : exisiting_user_found;
 });
 exports.EXISTING_USER_FOUND_IN_DATABASE = EXISTING_USER_FOUND_IN_DATABASE;
 //# sourceMappingURL=ErrorHandlerReducer.js.map
