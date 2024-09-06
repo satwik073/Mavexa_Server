@@ -6,8 +6,8 @@ const bcrypt = require('bcryptjs');
 import { email_service_enabled } from "../../Services/EmailServices";
 import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR } from "../../Middlewares/Error/ErrorHandlerReducer";
 import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
-import { DECODING_INCOMING_SECURITY_PASSCODE, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
-import { ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
+import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, MODIFIED_STATE_SETTER, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
+import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import { HTTPS_STATUS_CODE } from "../../server";
 
 
@@ -43,14 +43,7 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
             otp_for_verification: otp_generating_code_block
         });
         await new_registered_user_defined.save();
-        const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-        if (!SECRET_KEY_FETCHED) throw new Error(ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
-
-        const token_for_authentication_generated = jwt.sign(
-            { id: new_registered_user_defined._id },
-            SECRET_KEY_FETCHED,
-            { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' }
-        );
+        const token_for_authentication_generated = JWT_KEY_GENERATION_ONBOARDED(new_registered_user_defined.id)
         await email_service_enabled({
             senders_email: process.env.SENDER_EMAIL || '',
             recievers_email: new_registered_user_defined.registered_user_email,
@@ -58,7 +51,7 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
             product_by_company: process.env.PRODUCT_NAME || '',
             recievers_username: new_registered_user_defined.registered_username
         });
-        return response.status(200).json({
+        return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
             message_Displayed: "User Registered Successfully",
             userInfo: new_registered_user_defined,
@@ -74,7 +67,7 @@ export const letting_user_login = async (request: Request<{}, {}, UserLoginReque
     const exisiting_user_found = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC);
 
     return !exisiting_user_found
-        ? response.status(404).json({ Error: "User not found." })
+        ? response.status(404).json(DEFAULT_EXECUTED.MISSING_USER)
         : 'registered_user_password' in exisiting_user_found
             ? await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_password, exisiting_user_found.registered_user_password)
                 ? (() => {
@@ -107,16 +100,17 @@ export const verify_email_provided_user = async (request: AuthenticatedRequest, 
         }
         const stored_token_for_user_request = await OTP_GENERATOR_CALLED(otp_for_verification, request.user.otp_for_verification)
 
-        if (stored_token_for_user_request) {
+        return (stored_token_for_user_request) ? 
+        await MODIFIED_STATE_SETTER(request , RolesSpecified.USER_DESC , request.user.otp_for_verfication = '',  ) 
                 request.user.otp_for_verification = "";
                 request.user.is_user_verified = true;
 
                 await request.user.save();
 
                 return response.status(200).json({ success: true, message: "Email verified successfully" });
-            } else {
-                return response.status(400).json({ Error: "Invalid OTP, please try again" });
-            }
+            : 
+                 response.status(400).json({ Error: "Invalid OTP, please try again" });
+            
         
     } catch (error_value_displayed) {
         console.error(error_value_displayed);
@@ -163,7 +157,7 @@ export const resend_otp_for_verification_request = async (request: Authenticated
 export const reset_password_for_verified_user = async (request: AuthenticatedRequest, response: Response) => {
     try {
         const fetched_loggedin_user = request.user;
-        if (!fetched_loggedin_user) throw new Error("User not found");
+        if (!fetched_loggedin_user) throw new Error();
         if (fetched_loggedin_user.is_user_verified) {
             const { registered_user_password } = request.body;
             const is_same_password_for_user = await bcrypt.compare(registered_user_password ,  fetched_loggedin_user.registered_user_password)

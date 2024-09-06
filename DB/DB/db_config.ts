@@ -1,17 +1,11 @@
 import mongoose from "mongoose";
+import { DATABASE_CONNECTION_REQUEST_HANDLER, DEFAULT_EXECUTED } from "../../Constants/Errors/PreDefinedErrors";
+import { DatabaseTrace } from "../../Common/structure";
+import { DATABASE_CONDTIONALS } from "../../Middlewares/Error/ErrorHandlerReducer";
+import {ASYNC_ERROR_HANDLER_ESTAIBLISHED} from '../../Middlewares/Error/ErrorHandlerReducer'
 
-
-const connection_DB_estaiblished = async() =>{
-    try{
-        const url_session = process.env.MONGO_DB_URL_ESTAIBLISHED
-        if( !url_session) throw new Error('MONGO_DB_URL_ESTAIBLISHED is not defined in environment variables');
-        await mongoose.connect(url_session).then(()=>{
-            console.log("Connection successfuly estaiblished between client and server")
-        }).catch((error_value_displayed)=>{
-            console.log(error_value_displayed, "Connection between client and server can't be estaiblished")
-        })
-    }catch{
-        console.log("Something went wrong")
-    }
-}
+const connection_DB_estaiblished = ASYNC_ERROR_HANDLER_ESTAIBLISHED( async() =>{
+    const url_session = process.env.MONGO_DB_URL_ESTAIBLISHED
+    await DATABASE_CONDTIONALS(url_session)
+})
 export default connection_DB_estaiblished

@@ -1,27 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
-import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
+import { DATABASE_CONNECTION_REQUEST_HANDLER, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
+import RolesSpecified, { AdminDocument, AuthTypeDeclared, DatabaseExitTraceRemaining, DatabaseTrace, SuccessManager, UserAuthControllingError, UserDocument } from "../../Common/structure";
 import user_detailed_description from "../../Model/user_model/UserRegisteringModal";
 import admin_detailed_structure_description from "../../Model/admin_model/AdminDataModel";
-interface UserDocument extends Document {
-    registered_user_email: string;
-    registered_user_password: string;
-    authorities_provided_by_role : RolesSpecified
-    _id: string;
-}
+import mongoose from "mongoose";
 
-interface AdminDocument extends Document {
-    admin_userEmail: string;
-    admin_userPassword: string;
-    authorities_provided_by_role : RolesSpecified
-    _id: string;
-}
-class UserAuthControllingError extends Error {
-    constructor(error_message: string) {
-        super(error_message)
-        this.name = `UserNotExitsError`
-    }
-}
 export const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn: Function) => (request: Request, response: Response, next_function: NextFunction) => Promise.resolve(fn(request, response, next_function)).catch(next_function)
 
 
@@ -50,3 +33,11 @@ export const EXISTING_USER_FOUND_IN_DATABASE = async (
 };
 
 
+export const DATABASE_CONDTIONALS = async(url_session : string | undefined) =>{
+    if( !url_session) throw new DatabaseExitTraceRemaining(DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(DatabaseTrace.DEFAULT_PARAMETER).MESSAGE);
+    await mongoose.connect(url_session).then(()=>{
+        throw new SuccessManager(DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(DatabaseTrace.SUCCESS_FETCHING).MESSAGE)
+    }).catch((error_value_displayed)=>{
+        throw new DatabaseExitTraceRemaining(DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(DatabaseTrace.DEFAULT_PARAMETER).MESSAGE)
+    })
+}
