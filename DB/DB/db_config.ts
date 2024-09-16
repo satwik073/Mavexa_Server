@@ -5,7 +5,7 @@ import { DATABASE_CONDTIONALS } from "../../Middlewares/Error/ErrorHandlerReduce
 import {ASYNC_ERROR_HANDLER_ESTAIBLISHED} from '../../Middlewares/Error/ErrorHandlerReducer'
 
 const connection_DB_estaiblished = ASYNC_ERROR_HANDLER_ESTAIBLISHED( async() =>{
-    const url_session = process.env.MONGO_DB_URL_ESTAIBLISHED
+    const url_session = process.env.MONGO_DB_URL_ESTAIBLISHED?.toString() || ''; 
     await DATABASE_CONDTIONALS(url_session)
 })
 export default connection_DB_estaiblished

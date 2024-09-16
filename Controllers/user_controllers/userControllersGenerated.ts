@@ -4,11 +4,12 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs');
 
 import { email_service_enabled } from "../../Services/EmailServices";
-import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR } from "../../Middlewares/Error/ErrorHandlerReducer";
+import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DATA_OBJECT } from "../../Middlewares/Error/ErrorHandlerReducer";
 import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
-import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, MODIFIED_STATE_SETTER, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
+import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import { HTTPS_STATUS_CODE } from "../../server";
+import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
 
 
 interface UserRegisterRequest {
@@ -29,34 +30,20 @@ interface UserVerificationMethod {
 }
 
 export const letting_user_registered = async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
-        const { registered_username, registered_user_email, registered_user_password } = request.body;
-       const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({registered_user_email, registered_user_password , registered_username} , response, AuthTypeDeclared.USER_REGISTRATION)
-        if(is_exists_missing_fields) return is_exists_missing_fields
-       await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email , AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC)
-       const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
-       const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
-       
-        const new_registered_user_defined = new user_detailed_description({
-            registered_user_email,
-            registered_username,
-            registered_user_password: hashed_password_generated,
-            otp_for_verification: otp_generating_code_block
-        });
-        await new_registered_user_defined.save();
-        const token_for_authentication_generated = JWT_KEY_GENERATION_ONBOARDED(new_registered_user_defined.id)
-        await email_service_enabled({
-            senders_email: process.env.SENDER_EMAIL || '',
-            recievers_email: new_registered_user_defined.registered_user_email,
-            otp_for_verfication: new_registered_user_defined.otp_for_verification,
-            product_by_company: process.env.PRODUCT_NAME || '',
-            recievers_username: new_registered_user_defined.registered_username
-        });
-        return response.status(HTTPS_STATUS_CODE.OK).json({
-            success: true,
-            message_Displayed: "User Registered Successfully",
-            userInfo: new_registered_user_defined,
-            token: token_for_authentication_generated
-        });
+    const { registered_username, registered_user_email, registered_user_password } = request.body;
+    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password, registered_username }, response, AuthTypeDeclared.USER_REGISTRATION)
+    if (is_exists_missing_fields) return is_exists_missing_fields
+    await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC)
+    const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
+    const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
+    const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({registered_user_email,registered_username,registered_user_password: hashed_password_generated,otp_for_verification: otp_generating_code_block},RolesSpecified.USER_DESC);
+    
+    return response.status(HTTPS_STATUS_CODE.OK).json({
+        success: true,
+        message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC),
+        userInfo: new_registered_user_defined,
+        token: token_for_authentication_generated
+    });
 }
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
@@ -100,18 +87,17 @@ export const verify_email_provided_user = async (request: AuthenticatedRequest, 
         }
         const stored_token_for_user_request = await OTP_GENERATOR_CALLED(otp_for_verification, request.user.otp_for_verification)
 
-        return (stored_token_for_user_request) ? 
-        await MODIFIED_STATE_SETTER(request , RolesSpecified.USER_DESC , request.user.otp_for_verfication = '',  ) 
-                request.user.otp_for_verification = "";
-                request.user.is_user_verified = true;
+        if (stored_token_for_user_request) {
+            request.user.otp_for_verification = "";
+            request.user.is_user_verified = true;
 
-                await request.user.save();
+            await request.user.save();
 
-                return response.status(200).json({ success: true, message: "Email verified successfully" });
-            : 
-                 response.status(400).json({ Error: "Invalid OTP, please try again" });
-            
-        
+            return response.status(200).json({ success: true, message: "Email verified successfully" });
+        } else {
+            return response.status(400).json({ Error: "Invalid OTP, please try again" });
+        }
+
     } catch (error_value_displayed) {
         console.error(error_value_displayed);
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
@@ -160,8 +146,8 @@ export const reset_password_for_verified_user = async (request: AuthenticatedReq
         if (!fetched_loggedin_user) throw new Error();
         if (fetched_loggedin_user.is_user_verified) {
             const { registered_user_password } = request.body;
-            const is_same_password_for_user = await bcrypt.compare(registered_user_password ,  fetched_loggedin_user.registered_user_password)
-            if(!is_same_password_for_user){
+            const is_same_password_for_user = await bcrypt.compare(registered_user_password, fetched_loggedin_user.registered_user_password)
+            if (!is_same_password_for_user) {
                 const salted_credentials = await bcrypt.genSalt(10);
                 const hashed_password_generated = await bcrypt.hash(registered_user_password, salted_credentials);
                 fetched_loggedin_user.registered_user_password = hashed_password_generated;
@@ -173,14 +159,14 @@ export const reset_password_for_verified_user = async (request: AuthenticatedReq
                     updated_user_profile_password: fetched_loggedin_user
                 });
             }
-          else{
-            return response.status(400).json({ Error: "Password can't be same as previous password use different one" });
-          }
+            else {
+                return response.status(400).json({ Error: "Password can't be same as previous password use different one" });
+            }
 
-        }else {
+        } else {
             return response.status(400).json({ Error: "Password can't be reset at this moment" });
         }
-    }catch (error_value_displayed) {
+    } catch (error_value_displayed) {
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
     }
 }

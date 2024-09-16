@@ -35,17 +35,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EXISTING_USER_FOUND_IN_DATABASE = exports.MISSING_FIELDS_VALIDATOR = exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = void 0;
+exports.TRACKING_DATA_OBJECT = exports.DATABASE_CONDTIONALS = exports.EXISTING_USER_FOUND_IN_DATABASE = exports.MISSING_FIELDS_VALIDATOR = exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = void 0;
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const structure_1 = __importStar(require("../../Common/structure"));
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
-class UserAuthControllingError extends Error {
-    constructor(error_message) {
-        super(error_message);
-        this.name = `UserNotExitsError`;
-    }
-}
+const mongoose_1 = __importDefault(require("mongoose"));
+const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
+const EmailServices_1 = require("../../Services/EmailServices");
 const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn) => (request, response, next_function) => Promise.resolve(fn(request, response, next_function)).catch(next_function);
 exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = ASYNC_ERROR_HANDLER_ESTAIBLISHED;
 const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression, response, user_auth_type_specified) => {
@@ -62,10 +59,52 @@ const EXISTING_USER_FOUND_IN_DATABASE = (user_registered_email, user_auth_type_s
         ? yield AdminDataModel_1.default.findOne({ admin_userEmail: user_registered_email })
         : yield UserRegisteringModal_1.default.findOne({ registered_user_email: user_registered_email });
     return user_auth_type_specified === structure_1.AuthTypeDeclared.USER_REGISTRATION && exisiting_user_found
-        ? (() => { throw new UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_REGISTRATION_SUPPORT); })()
+        ? (() => { throw new structure_1.UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_REGISTRATION_SUPPORT); })()
         : user_auth_type_specified === structure_1.AuthTypeDeclared.USER_LOGIN && !exisiting_user_found
-            ? (() => { throw new UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_LOGIN_MESSAGE); })()
+            ? (() => { throw new structure_1.UserAuthControllingError(PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(user_auth_type_specified).USER_LOGIN_MESSAGE); })()
             : exisiting_user_found;
 });
 exports.EXISTING_USER_FOUND_IN_DATABASE = EXISTING_USER_FOUND_IN_DATABASE;
+const DATABASE_CONDTIONALS = (url_session) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!url_session) {
+        throw new structure_1.DatabaseExitTraceRemaining(PreDefinedErrors_1.DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(structure_1.DatabaseTrace.DEFAULT_PARAMETER).MESSAGE);
+    }
+    return yield mongoose_1.default.connect(url_session)
+        .then(() => {
+        const successMessage = PreDefinedErrors_1.DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(structure_1.DatabaseTrace.SUCCESS_FETCHING).MESSAGE;
+        console.log((successMessage));
+        return new structure_1.SuccessManager(successMessage);
+    })
+        .catch(() => new structure_1.DatabaseExitTraceRemaining(PreDefinedErrors_1.DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(structure_1.DatabaseTrace.DEFAULT_PARAMETER).MESSAGE));
+});
+exports.DATABASE_CONDTIONALS = DATABASE_CONDTIONALS;
+const TRACKING_DATA_OBJECT = (user_provided_data_carried, user_auth_type_specified) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let recognized_user;
+        let token_for_authentication_generated;
+        if (user_auth_type_specified === structure_1.default.ADMIN_DESC) {
+            recognized_user = yield new AdminDataModel_1.default(user_provided_data_carried).save();
+        }
+        else if (user_auth_type_specified === structure_1.default.USER_DESC) {
+            recognized_user = yield new UserRegisteringModal_1.default(user_provided_data_carried).save();
+            yield (0, EmailServices_1.email_service_enabled)({
+                senders_email: process.env.SENDER_EMAIL || '',
+                recievers_email: recognized_user.registered_user_email,
+                otp_for_verfication: recognized_user.otp_for_verification,
+                product_by_company: process.env.PRODUCT_NAME || '',
+                recievers_username: recognized_user.registered_username
+            });
+            console.log(recognized_user);
+        }
+        else {
+            throw new structure_1.UserAuthControllingError(PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR);
+        }
+        token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(recognized_user.id);
+        return { recognized_user, token_for_authentication_generated };
+    }
+    catch (error) {
+        throw error;
+    }
+});
+exports.TRACKING_DATA_OBJECT = TRACKING_DATA_OBJECT;
 //# sourceMappingURL=ErrorHandlerReducer.js.map

@@ -31,12 +31,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
-const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const EmailServices_1 = require("../../Services/EmailServices");
@@ -45,6 +41,7 @@ const structure_1 = __importStar(require("../../Common/structure"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const server_1 = require("../../server");
+const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     const { registered_username, registered_user_email, registered_user_password } = request.body;
     const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password, registered_username }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
@@ -53,27 +50,10 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
     yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC);
     const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
     const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_email);
-    const new_registered_user_defined = new UserRegisteringModal_1.default({
-        registered_user_email,
-        registered_username,
-        registered_user_password: hashed_password_generated,
-        otp_for_verification: otp_generating_code_block
-    });
-    yield new_registered_user_defined.save();
-    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-    if (!SECRET_KEY_FETCHED)
-        throw new Error(PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
-    const token_for_authentication_generated = jwt.sign({ id: new_registered_user_defined._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
-    yield (0, EmailServices_1.email_service_enabled)({
-        senders_email: process.env.SENDER_EMAIL || '',
-        recievers_email: new_registered_user_defined.registered_user_email,
-        otp_for_verfication: new_registered_user_defined.otp_for_verification,
-        product_by_company: process.env.PRODUCT_NAME || '',
-        recievers_username: new_registered_user_defined.registered_username
-    });
-    return response.status(200).json({
+    const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = yield (0, ErrorHandlerReducer_1.TRACKING_DATA_OBJECT)({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, structure_1.default.USER_DESC);
+    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
         success: true,
-        message_Displayed: "User Registered Successfully",
+        message_Displayed: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC),
         userInfo: new_registered_user_defined,
         token: token_for_authentication_generated
     });
@@ -86,7 +66,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
         return is_exists_missing_fields;
     const exisiting_user_found = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
     return !exisiting_user_found
-        ? response.status(404).json({ Error: "User not found." })
+        ? response.status(404).json(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER)
         : 'registered_user_password' in exisiting_user_found
             ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, exisiting_user_found.registered_user_password))
                 ? (() => {
@@ -167,7 +147,7 @@ const reset_password_for_verified_user = (request, response) => __awaiter(void 0
     try {
         const fetched_loggedin_user = request.user;
         if (!fetched_loggedin_user)
-            throw new Error("User not found");
+            throw new Error();
         if (fetched_loggedin_user.is_user_verified) {
             const { registered_user_password } = request.body;
             const is_same_password_for_user = yield bcrypt.compare(registered_user_password, fetched_loggedin_user.registered_user_password);
