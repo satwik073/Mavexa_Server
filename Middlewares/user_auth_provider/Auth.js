@@ -18,6 +18,8 @@ const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/U
 const structure_1 = __importDefault(require("../../Common/structure"));
 const RoutesFormed_1 = require("../../Constants/RoutesDefined/RoutesFormed");
 const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
+const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
+const server_1 = require("../../server");
 const is_authenticated_user = (request, response, next_forward) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { authorization } = request.headers;
@@ -32,19 +34,22 @@ const is_authenticated_user = (request, response, next_forward) => __awaiter(voi
             const decoding_token_data = jwt.verify(fetching_token, SECRET_KEY_FETCHED);
             console.log(decoding_token_data);
             const user = (modified_token_role === structure_1.default.USER_DESC) ? yield UserRegisteringModal_1.default.findById(decoding_token_data.id) : (modified_token_role === structure_1.default.ADMIN_DESC) ? yield AdminDataModel_1.default.findById(decoding_token_data.id) : null;
-            if (!user) {
-                return response.status(401).json({ Error: "User not found" });
+            if (!user && modified_token_role === structure_1.default.USER_DESC) {
+                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE });
+            }
+            else if (!user && modified_token_role === structure_1.default.ADMIN_DESC) {
+                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.ADMIN_DESC).MESSAGE });
             }
             request.user = user;
-            return user.authorities_provided_by_role === structure_1.default.ADMIN_DESC
+            return (user === null || user === void 0 ? void 0 : user.authorities_provided_by_role) === structure_1.default.ADMIN_DESC
                 ? ([RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_access_users].includes(request.path)
                     ? next_forward()
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
-                : user.authorities_provided_by_role === structure_1.default.USER_DESC
+                : (user === null || user === void 0 ? void 0 : user.authorities_provided_by_role) === structure_1.default.USER_DESC
                     ? ([RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password].includes(request.path)
                         ? next_forward()
                         : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
-                    : response.status(403).json({ Error: "Forbidden: Invalid user role" });
+                    : response.status(403).json({ Error: "Forbidden: Invalid user role", details: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.EMPTY).MESSAGE });
         }
         else {
             return response.status(401).json({ Error: "Authorization token not found, Login first to access Resources" });

@@ -4,6 +4,8 @@ import user_detailed_description from '../../Model/user_model/UserRegisteringMod
 import RolesSpecified from '../../Common/structure';
 import { ADMIN_SUPPORT_CONFIGURATION , USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesDefined/RoutesFormed';
 import admin_detailed_structure_description from '../../Model/admin_model/AdminDataModel';
+import { DEFAULT_EXECUTED } from '../../Constants/Errors/PreDefinedErrors';
+import { HTTPS_STATUS_CODE } from '../../server';
 
 interface AuthenticatedRequest extends Request {
     user?: any;
@@ -30,20 +32,22 @@ export const is_authenticated_user = async (request: Request, response: Response
             console.log(decoding_token_data)
             
             const  user =  (modified_token_role === RolesSpecified.USER_DESC) ? await user_detailed_description.findById(decoding_token_data.id) : (modified_token_role === RolesSpecified.ADMIN_DESC) ? await admin_detailed_structure_description.findById(decoding_token_data.id) : null
-            if (!user) {
-                return response.status(401).json({ Error: "User not found" });
+            if (!user && modified_token_role === RolesSpecified.USER_DESC) {
+                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE });
+            }else if ( !user && modified_token_role === RolesSpecified.ADMIN_DESC){
+                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.ADMIN_DESC).MESSAGE });
             }
 
             (request as AuthenticatedRequest).user = user;
-            return user.authorities_provided_by_role === RolesSpecified.ADMIN_DESC 
+            return user?.authorities_provided_by_role === RolesSpecified.ADMIN_DESC 
             ? ([ADMIN_SUPPORT_CONFIGURATION.admin_access_users].includes(request.path) 
                 ? next_forward() 
                 : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
-            : user.authorities_provided_by_role === RolesSpecified.USER_DESC 
+            : user?.authorities_provided_by_role === RolesSpecified.USER_DESC 
                 ? ([USER_SUPPORT_CONFIGURATION.user_profile, USER_SUPPORT_CONFIGURATION.user_reverification, USER_SUPPORT_CONFIGURATION.reset_user_password].includes(request.path) 
                     ? next_forward() 
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
-                : response.status(403).json({ Error: "Forbidden: Invalid user role" });
+                : response.status(403).json({ Error: "Forbidden: Invalid user role", details : DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.EMPTY).MESSAGE});
         
         } else {
             return response.status(401).json({ Error: "Authorization token not found, Login first to access Resources" });

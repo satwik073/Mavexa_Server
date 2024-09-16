@@ -1,6 +1,7 @@
 enum RolesSpecified {
     ADMIN_DESC = "admin",
-    USER_DESC = "user"
+    USER_DESC = "user",
+    EMPTY = `Can't determine`
 }
 export enum AuthTypeDeclared{
     USER_REGISTRATION  = "Register",
@@ -12,6 +13,10 @@ export enum DatabaseTrace {
     ERROR_ENCOUNTERED = 'Error',
     DEFAULT_PARAMETER = 'Default',
     DatabaseConnectionTrace= 'DatabaseConnectionTrace'
+}
+export enum VariantsType {
+    TEXT = 'text',
+    OTP_TRACES = 'otp'
 }
 
 export interface UserDocument extends Document {
@@ -34,6 +39,10 @@ export class DatabaseExitTraceRemaining extends Error{
     }
 }
 
+export interface EmailDeliverablesContent {
+    text_context : VariantsType.TEXT | VariantsType.OTP_TRACES,
+    content_rendering : string,
+}
 export interface AdminDocument extends Document {
     admin_userEmail: string;
     admin_userPassword: string;

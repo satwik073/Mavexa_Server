@@ -27,7 +27,9 @@ exports.DATABASE_CONNECTION_REQUEST_HANDLER = exports.ERROR_VALUES_FETCHER = exp
 const structure_1 = __importStar(require("../../Common/structure"));
 exports.DEFAULT_EXECUTED = {
     ERROR: 'Something went wrong',
-    MISSING_USER: 'User not found'
+    MISSING_USER: (user_roles_specified) => ({
+        MESSAGE: (user_roles_specified === structure_1.default.ADMIN_DESC) ? `${structure_1.default.ADMIN_DESC} account doesn't exists` : (user_roles_specified === structure_1.default.USER_DESC) ? `${structure_1.default.USER_DESC} account doesn't exists` : `Can't determine`
+    })
 };
 exports.ERROR_VALUES_FETCHER = {
     EMPTY_FIELDS_VALIDATOR: (user_auth_type_specified) => ({

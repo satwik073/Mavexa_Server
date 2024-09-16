@@ -70,7 +70,7 @@ exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_E
         return is_exists_missing_fields;
     const is_admin_credentials_valid = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(admin_userEmail, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.ADMIN_DESC);
     return !is_admin_credentials_valid
-        ? response.status(404).json({ Error: "User not found." })
+        ? response.status(404).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.ADMIN_DESC).MESSAGE })
         : 'admin_userPassword' in is_admin_credentials_valid
             ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(admin_userPassword, is_admin_credentials_valid.admin_userPassword))
                 ? (() => __awaiter(void 0, void 0, void 0, function* () {

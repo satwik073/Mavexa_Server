@@ -16,6 +16,10 @@ export const SUCCESS_VALUES_FETCHER = {
                         : null
                 : null
     }),
+    RETRIEVED_ENTITY_SESSION: (user_type_specified: RolesSpecified) => ({
+        SUCCESS_MESSAGE: (user_type_specified === RolesSpecified.ADMIN_DESC) ? `${RolesSpecified.ADMIN_DESC} fetched Successfully`
+            : (user_type_specified === RolesSpecified.USER_DESC) ? `${RolesSpecified.USER_DESC} fetched Successfully` : null
+    }),
     USER_FOUND_OR_NOT_CONTROLLED: (user_detected: AuthTypeDeclared) => ({
         USER_LOGIN_MESSAGE: `User does not exists try ${AuthTypeDeclared.USER_LOGIN} using different Credentials`,
         USER_REGISTRATION_SUPPORT: `User Already exists try ${AuthTypeDeclared.USER_REGISTRATION.toLowerCase()}ing with different email`

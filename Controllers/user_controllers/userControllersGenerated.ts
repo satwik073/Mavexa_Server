@@ -10,6 +10,7 @@ import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import { HTTPS_STATUS_CODE } from "../../server";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
+import { NOTFOUND } from "dns";
 
 
 interface UserRegisterRequest {
@@ -30,20 +31,29 @@ interface UserVerificationMethod {
 }
 
 export const letting_user_registered = async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
-    const { registered_username, registered_user_email, registered_user_password } = request.body;
-    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password, registered_username }, response, AuthTypeDeclared.USER_REGISTRATION)
-    if (is_exists_missing_fields) return is_exists_missing_fields
-    await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC)
-    const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
-    const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
-    const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({registered_user_email,registered_username,registered_user_password: hashed_password_generated,otp_for_verification: otp_generating_code_block},RolesSpecified.USER_DESC);
-    
-    return response.status(HTTPS_STATUS_CODE.OK).json({
-        success: true,
-        message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC),
-        userInfo: new_registered_user_defined,
-        token: token_for_authentication_generated
-    });
+    try{
+
+        const { registered_username, registered_user_email, registered_user_password } = request.body;
+        const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password, registered_username }, response, AuthTypeDeclared.USER_REGISTRATION)
+        if (is_exists_missing_fields) return is_exists_missing_fields
+        await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC)
+        const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
+        const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
+        const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({registered_user_email,registered_username,registered_user_password: hashed_password_generated,otp_for_verification: otp_generating_code_block},RolesSpecified.USER_DESC);
+        
+        return response.status(HTTPS_STATUS_CODE.OK).json({
+            success: true,
+            message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC),
+            userInfo: new_registered_user_defined,
+            token: token_for_authentication_generated
+        });
+    }catch (error_value_displayed) {
+        console.error("Error in user registration:", error_value_displayed);
+        return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(AuthTypeDeclared.USER_REGISTRATION).USER_REGISTRATION_SUPPORT
+        });
+    }
 }
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
@@ -115,10 +125,10 @@ export const resend_otp_for_verification_request = async (request: Authenticated
 
             await email_service_enabled({
                 senders_email: process.env.SENDER_EMAIL || '',
-                recievers_email: fetched_loggedin_user.registered_user_email,
-                otp_for_verfication: fetched_loggedin_user.otp_for_verification,
+                receivers_email: fetched_loggedin_user.registered_user_email,
+                otp_for_verification:  fetched_loggedin_user.otp_for_verification,
                 product_by_company: process.env.PRODUCT_NAME || '',
-                recievers_username: fetched_loggedin_user.registered_username
+                receivers_username:  fetched_loggedin_user.registered_username
             });
 
             return response.status(200).json({
@@ -173,14 +183,14 @@ export const reset_password_for_verified_user = async (request: AuthenticatedReq
 export const get_user_profile = async (request: AuthenticatedRequest, response: Response) => {
     try {
         const fetched_loggedin_user = request.user;
-        if (!fetched_loggedin_user) throw new Error("User Can't found");
+        if (!fetched_loggedin_user) throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
         console.log(fetched_loggedin_user)
-        return response.status(200).json({
+        return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message: "User Fetched successfuly",
+            message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
             userInfo: fetched_loggedin_user
         })
     } catch (error_value_displayed) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
+        return response.status(500).json({ Error: DEFAULT_EXECUTED.ERROR , details: (error_value_displayed as Error).message , NOTFOUND : DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE  });
     }
 }

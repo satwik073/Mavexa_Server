@@ -43,20 +43,29 @@ const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const server_1 = require("../../server");
 const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const { registered_username, registered_user_email, registered_user_password } = request.body;
-    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password, registered_username }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
-    if (is_exists_missing_fields)
-        return is_exists_missing_fields;
-    yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC);
-    const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
-    const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_email);
-    const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = yield (0, ErrorHandlerReducer_1.TRACKING_DATA_OBJECT)({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, structure_1.default.USER_DESC);
-    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
-        success: true,
-        message_Displayed: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC),
-        userInfo: new_registered_user_defined,
-        token: token_for_authentication_generated
-    });
+    try {
+        const { registered_username, registered_user_email, registered_user_password } = request.body;
+        const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password, registered_username }, response, structure_1.AuthTypeDeclared.USER_REGISTRATION);
+        if (is_exists_missing_fields)
+            return is_exists_missing_fields;
+        yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC);
+        const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
+        const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_email);
+        const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = yield (0, ErrorHandlerReducer_1.TRACKING_DATA_OBJECT)({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, structure_1.default.USER_DESC);
+        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+            success: true,
+            message_Displayed: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC),
+            userInfo: new_registered_user_defined,
+            token: token_for_authentication_generated
+        });
+    }
+    catch (error_value_displayed) {
+        console.error("Error in user registration:", error_value_displayed);
+        return response.status(server_1.HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(structure_1.AuthTypeDeclared.USER_REGISTRATION).USER_REGISTRATION_SUPPORT
+        });
+    }
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -119,10 +128,10 @@ const resend_otp_for_verification_request = (request, response) => __awaiter(voi
             yield fetched_loggedin_user.save();
             yield (0, EmailServices_1.email_service_enabled)({
                 senders_email: process.env.SENDER_EMAIL || '',
-                recievers_email: fetched_loggedin_user.registered_user_email,
-                otp_for_verfication: fetched_loggedin_user.otp_for_verification,
+                receivers_email: fetched_loggedin_user.registered_user_email,
+                otp_for_verification: fetched_loggedin_user.otp_for_verification,
                 product_by_company: process.env.PRODUCT_NAME || '',
-                recievers_username: fetched_loggedin_user.registered_username
+                receivers_username: fetched_loggedin_user.registered_username
             });
             return response.status(200).json({
                 success: true,
@@ -179,16 +188,16 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
     try {
         const fetched_loggedin_user = request.user;
         if (!fetched_loggedin_user)
-            throw new Error("User Can't found");
+            throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
         console.log(fetched_loggedin_user);
-        return response.status(200).json({
+        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message: "User Fetched successfuly",
+            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
             userInfo: fetched_loggedin_user
         });
     }
     catch (error_value_displayed) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error_value_displayed.message });
+        return response.status(500).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR, details: error_value_displayed.message, NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE });
     }
 });
 exports.get_user_profile = get_user_profile;

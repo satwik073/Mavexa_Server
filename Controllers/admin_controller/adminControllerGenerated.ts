@@ -6,7 +6,7 @@ import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, SECU
 import user_detailed_description from "../../Model/user_model/UserRegisteringModal";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
 import { HTTPS_STATUS_CODE } from "../../server";
-import { ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
+import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 
 interface AdminRegistrationModel {
     admin_userName: string,
@@ -42,7 +42,7 @@ export const authorized_admin_login = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (re
     if (is_exists_missing_fields) return is_exists_missing_fields;
     const is_admin_credentials_valid = await EXISTING_USER_FOUND_IN_DATABASE(admin_userEmail, AuthTypeDeclared.USER_LOGIN, RolesSpecified.ADMIN_DESC)
     return !is_admin_credentials_valid
-    ? response.status(404).json({ Error: "User not found." })
+    ? response.status(404).json({ Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.ADMIN_DESC).MESSAGE})
     : 'admin_userPassword' in is_admin_credentials_valid
         ? await DECODING_INCOMING_SECURITY_PASSCODE(admin_userPassword, is_admin_credentials_valid.admin_userPassword)
             ? ( async () => {

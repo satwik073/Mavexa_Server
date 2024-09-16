@@ -5,6 +5,7 @@ import { configDotenv } from 'dotenv'
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
+import { Request ,Response , NextFunction } from 'express';
 import user_controlling_routes from './Routes/user_routers/userRouter'
 import admin_controlling_routes from './Routes/admin_routes/adminRoutes'
 import connection_DB_estaiblished from './DB/DB/db_config'

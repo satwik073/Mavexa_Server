@@ -64,10 +64,10 @@ export const TRACKING_DATA_OBJECT = async (user_provided_data_carried: {}, user_
       recognized_user = await new user_detailed_description(user_provided_data_carried).save();
       await email_service_enabled({
         senders_email: process.env.SENDER_EMAIL || '',
-        recievers_email: recognized_user.registered_user_email,
-        otp_for_verfication:  recognized_user.otp_for_verification,
+        receivers_email: recognized_user.registered_user_email,
+        otp_for_verification:  recognized_user.otp_for_verification,
         product_by_company: process.env.PRODUCT_NAME || '',
-        recievers_username:  recognized_user.registered_username
+        receivers_username:  recognized_user.registered_username
     });
       console.log(recognized_user)
     } else {

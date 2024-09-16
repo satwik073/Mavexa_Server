@@ -89,10 +89,10 @@ const TRACKING_DATA_OBJECT = (user_provided_data_carried, user_auth_type_specifi
             recognized_user = yield new UserRegisteringModal_1.default(user_provided_data_carried).save();
             yield (0, EmailServices_1.email_service_enabled)({
                 senders_email: process.env.SENDER_EMAIL || '',
-                recievers_email: recognized_user.registered_user_email,
-                otp_for_verfication: recognized_user.otp_for_verification,
+                receivers_email: recognized_user.registered_user_email,
+                otp_for_verification: recognized_user.otp_for_verification,
                 product_by_company: process.env.PRODUCT_NAME || '',
-                recievers_username: recognized_user.registered_username
+                receivers_username: recognized_user.registered_username
             });
             console.log(recognized_user);
         }

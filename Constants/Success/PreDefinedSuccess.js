@@ -41,6 +41,10 @@ exports.SUCCESS_VALUES_FETCHER = {
                         : null
                 : null
     }),
+    RETRIEVED_ENTITY_SESSION: (user_type_specified) => ({
+        SUCCESS_MESSAGE: (user_type_specified === structure_1.default.ADMIN_DESC) ? `${structure_1.default.ADMIN_DESC} fetched Successfully`
+            : (user_type_specified === structure_1.default.USER_DESC) ? `${structure_1.default.USER_DESC} fetched Successfully` : null
+    }),
     USER_FOUND_OR_NOT_CONTROLLED: (user_detected) => ({
         USER_LOGIN_MESSAGE: `User does not exists try ${structure_1.AuthTypeDeclared.USER_LOGIN} using different Credentials`,
         USER_REGISTRATION_SUPPORT: `User Already exists try ${structure_1.AuthTypeDeclared.USER_REGISTRATION.toLowerCase()}ing with different email`

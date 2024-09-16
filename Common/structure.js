@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
+exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
 var RolesSpecified;
 (function (RolesSpecified) {
     RolesSpecified["ADMIN_DESC"] = "admin";
     RolesSpecified["USER_DESC"] = "user";
+    RolesSpecified["EMPTY"] = "Can't determine";
 })(RolesSpecified || (RolesSpecified = {}));
 var AuthTypeDeclared;
 (function (AuthTypeDeclared) {
@@ -18,6 +19,11 @@ var DatabaseTrace;
     DatabaseTrace["DEFAULT_PARAMETER"] = "Default";
     DatabaseTrace["DatabaseConnectionTrace"] = "DatabaseConnectionTrace";
 })(DatabaseTrace || (exports.DatabaseTrace = DatabaseTrace = {}));
+var VariantsType;
+(function (VariantsType) {
+    VariantsType["TEXT"] = "text";
+    VariantsType["OTP_TRACES"] = "otp";
+})(VariantsType || (exports.VariantsType = VariantsType = {}));
 class SuccessManager {
     constructor(message_displayed) {
         this.message_displayed = 'DatabaseConnectionTrace';
