@@ -31,7 +31,7 @@ interface UserVerificationMethod {
 }
 
 export const letting_user_registered = async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
-    try{
+    try {
 
         const { registered_username, registered_user_email, registered_user_password } = request.body;
         const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password, registered_username }, response, AuthTypeDeclared.USER_REGISTRATION)
@@ -39,15 +39,15 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC)
         const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
         const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
-        const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({registered_user_email,registered_username,registered_user_password: hashed_password_generated,otp_for_verification: otp_generating_code_block},RolesSpecified.USER_DESC);
-        
+        const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, RolesSpecified.USER_DESC);
+
         return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.USER_DESC),
+            message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC),
             userInfo: new_registered_user_defined,
             token: token_for_authentication_generated
         });
-    }catch (error_value_displayed) {
+    } catch (error_value_displayed) {
         console.error("Error in user registration:", error_value_displayed);
         return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
             success: false,
@@ -58,33 +58,34 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
     const { registered_user_email, registered_user_password } = request.body;
-
-    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_password, registered_user_email }, response, AuthTypeDeclared.USER_LOGIN);
+    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password }, response, AuthTypeDeclared.USER_LOGIN);
     if (is_exists_missing_fields) return is_exists_missing_fields;
-    const exisiting_user_found = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC);
-
-    return !exisiting_user_found
-        ? response.status(404).json(DEFAULT_EXECUTED.MISSING_USER)
-        : 'registered_user_password' in exisiting_user_found
-            ? await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_password, exisiting_user_found.registered_user_password)
-                ? (() => {
-                    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-                    if (!SECRET_KEY_FETCHED) return response.status(400).json((ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS))
-                    const token_for_authentication_generated = jwt.sign(
-                        { id: exisiting_user_found._id },
-                        SECRET_KEY_FETCHED,
-                        { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' }
-                    );
-
+    const is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC)
+    return !is_existing_database_user
+        ? response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE })
+        : 'registered_user_password' in is_existing_database_user
+            ? await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_email, is_existing_database_user.registered_user_password)
+                ? (async () => {
+                    const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id)
                     return response.status(HTTPS_STATUS_CODE.OK).json({
                         success: true,
-                        message: "User logged in successfully",
-                        userInfo: exisiting_user_found,
+                        message: [
+                             
+                            { 
+                                SUCCESS_MESSAGE : SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+                                USER_ROLE: RolesSpecified.USER_DESC ,
+                                AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
+                            }, 
+                            
+                        ],
+                        userInfo: is_existing_database_user,
                         token: token_for_authentication_generated
                     });
+                    
                 })()
-                : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC))
-            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC));
+                : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC))
+            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC));
+
 };
 
 
@@ -126,9 +127,9 @@ export const resend_otp_for_verification_request = async (request: Authenticated
             await email_service_enabled({
                 senders_email: process.env.SENDER_EMAIL || '',
                 receivers_email: fetched_loggedin_user.registered_user_email,
-                otp_for_verification:  fetched_loggedin_user.otp_for_verification,
+                otp_for_verification: fetched_loggedin_user.otp_for_verification,
                 product_by_company: process.env.PRODUCT_NAME || '',
-                receivers_username:  fetched_loggedin_user.registered_username
+                receivers_username: fetched_loggedin_user.registered_username
             });
 
             return response.status(200).json({
@@ -191,6 +192,6 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
             userInfo: fetched_loggedin_user
         })
     } catch (error_value_displayed) {
-        return response.status(500).json({ Error: DEFAULT_EXECUTED.ERROR , details: (error_value_displayed as Error).message , NOTFOUND : DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE  });
+        return response.status(500).json({ Error: DEFAULT_EXECUTED.ERROR, details: (error_value_displayed as Error).message, NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE });
     }
 }

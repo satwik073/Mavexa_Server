@@ -27,7 +27,16 @@ export const authorized_admin_account = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (
         const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(admin_registration_data.id)
         return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION , RolesSpecified.ADMIN_DESC),
+            message: [
+                             
+                { 
+                    
+                    SUCCESS_MESSAGE : SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.ADMIN_DESC).SUCCESS_MESSAGE,
+                    USER_ROLE: RolesSpecified.ADMIN_DESC ,
+                    AUTH_TYPE: AuthTypeDeclared.USER_REGISTRATION
+                }, 
+                
+            ],
             admin_data: admin_registration_data,
             token_generated: token_for_authentication_generated
         })
@@ -49,13 +58,21 @@ export const authorized_admin_login = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (re
                 const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_admin_credentials_valid._id)
                 return response.status(HTTPS_STATUS_CODE.OK).json({
                     success: true,
-                    message: "User logged in successfully",
+                    message: [
+                             
+                        { 
+                            SUCCESS_MESSAGE : SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.ADMIN_DESC).SUCCESS_MESSAGE,
+                            USER_ROLE: RolesSpecified.ADMIN_DESC ,
+                            AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
+                        }, 
+                        
+                    ],
                     userInfo: is_admin_credentials_valid,
                     token: token_for_authentication_generated
                 });
             })()
-            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC))
-        : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC));
+            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC))
+        : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC));
 
 })
 
@@ -69,6 +86,6 @@ export const get_all_registered_user_profile = async (request: Request, response
         })
 
     } catch {
-        return response.status(500).json({ Error: 'Something went wrong, try again later' })
+        return response.status(500).json(DEFAULT_EXECUTED.ERROR)
     }
 }

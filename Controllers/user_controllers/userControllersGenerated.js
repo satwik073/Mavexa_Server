@@ -70,28 +70,31 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     const { registered_user_email, registered_user_password } = request.body;
-    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_password, registered_user_email }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
     if (is_exists_missing_fields)
         return is_exists_missing_fields;
-    const exisiting_user_found = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
-    return !exisiting_user_found
-        ? response.status(404).json(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER)
-        : 'registered_user_password' in exisiting_user_found
-            ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, exisiting_user_found.registered_user_password))
-                ? (() => {
-                    const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
-                    if (!SECRET_KEY_FETCHED)
-                        return response.status(400).json((PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS));
-                    const token_for_authentication_generated = jwt.sign({ id: exisiting_user_found._id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
+    const is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+    return !is_existing_database_user
+        ? response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE })
+        : 'registered_user_password' in is_existing_database_user
+            ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_email, is_existing_database_user.registered_user_password))
+                ? (() => __awaiter(void 0, void 0, void 0, function* () {
+                    const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
                     return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
                         success: true,
-                        message: "User logged in successfully",
-                        userInfo: exisiting_user_found,
+                        message: [
+                            {
+                                SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                                USER_ROLE: structure_1.default.USER_DESC,
+                                AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
+                            },
+                        ],
+                        userInfo: is_existing_database_user,
                         token: token_for_authentication_generated
                     });
-                })()
-                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC))
-            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC));
+                }))()
+                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC))
+            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC));
 });
 exports.letting_user_login = letting_user_login;
 const verify_email_provided_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {

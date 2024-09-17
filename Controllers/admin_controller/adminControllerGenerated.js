@@ -57,7 +57,13 @@ exports.authorized_admin_account = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER
         const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(admin_registration_data.id);
         return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.ADMIN_DESC),
+            message: [
+                {
+                    SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.ADMIN_DESC).SUCCESS_MESSAGE,
+                    USER_ROLE: structure_1.default.ADMIN_DESC,
+                    AUTH_TYPE: structure_1.AuthTypeDeclared.USER_REGISTRATION
+                },
+            ],
             admin_data: admin_registration_data,
             token_generated: token_for_authentication_generated
         });
@@ -77,13 +83,19 @@ exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_E
                     const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_admin_credentials_valid._id);
                     return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
                         success: true,
-                        message: "User logged in successfully",
+                        message: [
+                            {
+                                SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.ADMIN_DESC).SUCCESS_MESSAGE,
+                                USER_ROLE: structure_1.default.ADMIN_DESC,
+                                AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
+                            },
+                        ],
                         userInfo: is_admin_credentials_valid,
                         token: token_for_authentication_generated
                     });
                 }))()
-                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC))
-            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC));
+                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC))
+            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC));
 }));
 const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -95,7 +107,7 @@ const get_all_registered_user_profile = (request, response) => __awaiter(void 0,
         });
     }
     catch (_a) {
-        return response.status(500).json({ Error: 'Something went wrong, try again later' });
+        return response.status(500).json(PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR);
     }
 });
 exports.get_all_registered_user_profile = get_all_registered_user_profile;

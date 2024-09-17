@@ -6,8 +6,6 @@ export const DEFAULT_EXECUTED = {
     MISSING_USER  : (user_roles_specified : RolesSpecified) =>({
         MESSAGE : (user_roles_specified === RolesSpecified.ADMIN_DESC) ? `${RolesSpecified.ADMIN_DESC} account doesn't exists` : (user_roles_specified === RolesSpecified.USER_DESC) ? `${RolesSpecified.USER_DESC} account doesn't exists` : `Can't determine`
     }) 
-
-
 }
 export const ERROR_VALUES_FETCHER = {
     EMPTY_FIELDS_VALIDATOR :(user_auth_type_specified : AuthTypeDeclared ) => ({
