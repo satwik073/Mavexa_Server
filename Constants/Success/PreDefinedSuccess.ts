@@ -1,5 +1,9 @@
 
-import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure"
+import RolesSpecified, { AuthTypeDeclared, SuccessManager } from "../../Common/structure"
+
+export const EMAIL_SESSION_RELAY = (user_type_specified : RolesSpecified ) =>({
+    SUCCESS : (user_type_specified === RolesSpecified.USER_DESC) ? `Email Sent Successfully to ${RolesSpecified.USER_DESC} having EMAIL ID: `: (user_type_specified === RolesSpecified.ADMIN_DESC) ? `Email Sent Successfully to ${RolesSpecified.ADMIN_DESC} having EMAIL ID:` : null
+})
 export const SUCCESS_VALUES_FETCHER = {
     ENTITY_ONBOARDED_FULFILED: (user_auth_type_specified: AuthTypeDeclared, user_role_specified: RolesSpecified) => ({
         SUCCESS_MESSAGE: user_role_specified === RolesSpecified.ADMIN_DESC

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useStyles = exports.email_content_rendering = exports.EMAIL_TAG_BINDING = void 0;
+exports.EMAIL_CONFIG_TEMPLATE = exports.useStyles = exports.email_content_rendering = exports.EMAIL_TAG_BINDING = void 0;
 const styles_1 = require("@mui/styles");
 const Typography_1 = __importDefault(require("@mui/material/Typography"));
 const Box_1 = __importDefault(require("@mui/material/Box"));
@@ -13,6 +13,7 @@ const TableCell_1 = __importDefault(require("@mui/material/TableCell"));
 const TableContainer_1 = __importDefault(require("@mui/material/TableContainer"));
 const TableRow_1 = __importDefault(require("@mui/material/TableRow"));
 const structure_1 = require("../../../Common/structure");
+const EmailTemplate_1 = __importDefault(require("../EmailTemplate"));
 exports.EMAIL_TAG_BINDING = {
     _H: Typography_1.default,
     _P: Typography_1.default,
@@ -83,4 +84,5 @@ exports.useStyles = (0, styles_1.makeStyles)((theme) => ({
         margin: 0,
     },
 }));
+exports.EMAIL_CONFIG_TEMPLATE = EmailTemplate_1.default;
 //# sourceMappingURL=use_styles.js.map

@@ -7,6 +7,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableRow from '@mui/material/TableRow';
 import { EmailDeliverablesContent, VariantsType } from '../../../Common/structure';
+import EmailTemplate from '../EmailTemplate';
 
 export const EMAIL_TAG_BINDING = {
     _H: Typography,
@@ -83,6 +84,8 @@ export const useStyles = makeStyles((theme: any) => ({
         margin: 0,
     },
 }));
+
+export const EMAIL_CONFIG_TEMPLATE = EmailTemplate
 
 
 

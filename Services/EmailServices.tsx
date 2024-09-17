@@ -1,56 +1,45 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import EmailTemplate from '../Config/Email/EmailTemplate';
 import dotenv from 'dotenv';
+import { EMAIL_CONFIG_TEMPLATE } from '../Config/Email/Constants/use_styles';
+import RolesSpecified, { EmailResponseControllingError, SendingEmailToUser } from '../Common/structure';
+import { DEFAULT_EXECUTED } from '../Constants/Errors/PreDefinedErrors';
+import { EMAIL_SESSION_RELAY } from '../Constants/Success/PreDefinedSuccess';
 
 dotenv.config();
+
+
 
 const mailjet = require('node-mailjet')
     .apiConnect(process.env.MJ_APIKEY_PUBLIC, process.env.MJ_APIKEY_PRIVATE);
 
-interface SendingEmailToUser {
-    senders_email: string;
-    receivers_email: string;
-    otp_for_verification: string;
-    product_by_company: string;
-    receivers_username: string;
-}
-
 export const email_service_enabled = async (email_sending_data_wrapped: SendingEmailToUser) => {
+
+    const Modifier = {
+        RC_USER: email_sending_data_wrapped.receivers_username,
+        RC_EMAIL_CONFIG: email_sending_data_wrapped.receivers_email,
+        SD_EMAIL_CONFIG: email_sending_data_wrapped.senders_email,
+        PD_C: email_sending_data_wrapped.product_by_company,
+        VR_OTP: email_sending_data_wrapped.otp_for_verification,
+    }
     try {
-        const htmlContent = ReactDOMServer.renderToStaticMarkup(
-            <EmailTemplate
-                receivers_username={email_sending_data_wrapped.receivers_username}
-                product_by_company={email_sending_data_wrapped.product_by_company}
-                otp_for_verification={email_sending_data_wrapped.otp_for_verification}
+        const mail_generating_content = ReactDOMServer.renderToStaticMarkup(
+            <EMAIL_CONFIG_TEMPLATE receivers_username={Modifier.RC_USER} product_by_company={Modifier.PD_C} otp_for_verification={Modifier.VR_OTP}
             />
         );
-
-        const request = mailjet
-            .post('send', { version: 'v3.1' }) 
-            .request({
-                Messages: [
-                    {
-                        From: {
-                            Email: email_sending_data_wrapped.senders_email,
-                            Name: email_sending_data_wrapped.product_by_company
-                        },
-                        To: [
-                            {
-                                Email: email_sending_data_wrapped.receivers_email,
-                                Name: email_sending_data_wrapped.receivers_username
-                            }
-                        ],
-                        Subject: `Your OTP Code for ${email_sending_data_wrapped.product_by_company}`,
-                        TextPart: `Hello ${email_sending_data_wrapped.receivers_username},\n\nHere is your OTP Code: ${email_sending_data_wrapped.otp_for_verification}\n\nIf you did not request this code, please ignore this email.\n\nThank you for choosing ${email_sending_data_wrapped.product_by_company}!\n\nBest regards,\nThe ${email_sending_data_wrapped.product_by_company} Team`,
-                        HTMLPart: htmlContent
+        const request_granted = mailjet.post('send', { version: 'v3.1' }).request({
+                Messages: [{
+                        From: {Email: Modifier.SD_EMAIL_CONFIG ,Name: Modifier.PD_C},
+                        To: [{Email: Modifier.RC_EMAIL_CONFIG,Name: Modifier.RC_USER}],
+                        Subject: `${Modifier.PD_C}`,
+                        TextPart: `${Modifier.RC_USER} ${Modifier.VR_OTP}${Modifier.PD_C}${Modifier.PD_C}`,
+                        HTMLPart: mail_generating_content 
                     }
                 ]
             });
-        const result = await request;
-        console.log('Email sent successfully:', result.body);
-    } catch (error) {
-        console.error("Error sending email:", error.message); 
-        console.error(error); 
+        await request_granted;
+        console.log(EMAIL_SESSION_RELAY(RolesSpecified.USER_DESC) , Modifier.RC_EMAIL_CONFIG);
+    } catch (error_displayed) {
+        console.error(new EmailResponseControllingError(DEFAULT_EXECUTED.ERROR)); 
     }
 };

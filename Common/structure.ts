@@ -39,6 +39,15 @@ export class DatabaseExitTraceRemaining extends Error{
     }
 }
 
+export interface SendingEmailToUser {
+    senders_email: string;
+    receivers_email: string;
+    otp_for_verification: string;
+    product_by_company: string;
+    receivers_username: string;
+}
+
+
 export interface EmailDeliverablesContent {
     text_context : VariantsType.TEXT | VariantsType.OTP_TRACES,
     content_rendering : string,
@@ -53,6 +62,13 @@ export class UserAuthControllingError extends Error {
     constructor(error_message: string) {
         super(error_message)
         this.name = `UserNotExitsError`
+    }
+}
+
+export class EmailResponseControllingError extends Error {
+    constructor(error_message : string){
+        super(error_message)
+        this.name = `EmailTracesNotSent`
     }
 }
 export interface UserInput {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
+exports.EmailResponseControllingError = exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
 var RolesSpecified;
 (function (RolesSpecified) {
     RolesSpecified["ADMIN_DESC"] = "admin";
@@ -44,5 +44,12 @@ class UserAuthControllingError extends Error {
     }
 }
 exports.UserAuthControllingError = UserAuthControllingError;
+class EmailResponseControllingError extends Error {
+    constructor(error_message) {
+        super(error_message);
+        this.name = `EmailTracesNotSent`;
+    }
+}
+exports.EmailResponseControllingError = EmailResponseControllingError;
 exports.default = RolesSpecified;
 //# sourceMappingURL=structure.js.map

@@ -23,8 +23,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SUCCESS_VALUES_FETCHER = void 0;
+exports.SUCCESS_VALUES_FETCHER = exports.EMAIL_SESSION_RELAY = void 0;
 const structure_1 = __importStar(require("../../Common/structure"));
+const EMAIL_SESSION_RELAY = (user_type_specified) => ({
+    SUCCESS: (user_type_specified === structure_1.default.USER_DESC) ? `Email Sent Successfully to ${structure_1.default.USER_DESC} having EMAIL ID: ` : (user_type_specified === structure_1.default.ADMIN_DESC) ? `Email Sent Successfully to ${structure_1.default.ADMIN_DESC} having EMAIL ID:` : null
+});
+exports.EMAIL_SESSION_RELAY = EMAIL_SESSION_RELAY;
 exports.SUCCESS_VALUES_FETCHER = {
     ENTITY_ONBOARDED_FULFILED: (user_auth_type_specified, user_role_specified) => ({
         SUCCESS_MESSAGE: user_role_specified === structure_1.default.ADMIN_DESC
