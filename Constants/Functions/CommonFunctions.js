@@ -25,7 +25,10 @@ const OTP_GENERATOR_CALLED = (entered_password_registration, otp_for_verificatio
 exports.OTP_GENERATOR_CALLED = OTP_GENERATOR_CALLED;
 const SECURING_PASSCODE = (entered_password_registration) => __awaiter(void 0, void 0, void 0, function* () {
     const salted_credentials = yield bcrypt.genSalt(10);
-    return yield bcrypt.hash(entered_password_registration, salted_credentials);
+    console.log("Salt generated during registration:", salted_credentials);
+    const hashed_password = yield bcrypt.hash(entered_password_registration, salted_credentials);
+    console.log("Hashed password:", hashed_password);
+    return hashed_password;
 });
 exports.SECURING_PASSCODE = SECURING_PASSCODE;
 const DECODING_INCOMING_SECURITY_PASSCODE = (user_entered_password, user_registered_password) => __awaiter(void 0, void 0, void 0, function* () {

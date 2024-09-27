@@ -38,12 +38,20 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         if (is_exists_missing_fields) return is_exists_missing_fields
         await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC)
         const otp_generating_code_block = await OTP_GENERATOR_CALLED(registered_user_email)
-        const hashed_password_generated = await SECURING_PASSCODE(registered_user_email)
+        const hashed_password_generated = await SECURING_PASSCODE(registered_user_password);
+        
         const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, RolesSpecified.USER_DESC);
 
         return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message_Displayed: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC),
+            message: [     
+                { 
+                    SUCCESS_MESSAGE : SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+                    USER_ROLE: RolesSpecified.USER_DESC ,
+                    AUTH_TYPE: AuthTypeDeclared.USER_REGISTRATION
+                }, 
+                
+            ],
             userInfo: new_registered_user_defined,
             token: token_for_authentication_generated
         });
@@ -57,35 +65,55 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
 }
 
 export const letting_user_login = async (request: Request<{}, {}, UserLoginRequest>, response: Response) => {
-    const { registered_user_email, registered_user_password } = request.body;
-    const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password }, response, AuthTypeDeclared.USER_LOGIN);
-    if (is_exists_missing_fields) return is_exists_missing_fields;
-    const is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC)
-    return !is_existing_database_user
-        ? response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE })
-        : 'registered_user_password' in is_existing_database_user
-            ? await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_email, is_existing_database_user.registered_user_password)
-                ? (async () => {
-                    const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id)
-                    return response.status(HTTPS_STATUS_CODE.OK).json({
-                        success: true,
-                        message: [
-                             
-                            { 
-                                SUCCESS_MESSAGE : SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-                                USER_ROLE: RolesSpecified.USER_DESC ,
-                                AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
-                            }, 
-                            
-                        ],
-                        userInfo: is_existing_database_user,
-                        token: token_for_authentication_generated
-                    });
-                    
-                })()
-                : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.ADMIN_DESC))
-            : response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json(ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC));
+    try {
+        const { registered_user_email, registered_user_password } = request.body;
 
+        const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR({ registered_user_email, registered_user_password }, response, AuthTypeDeclared.USER_LOGIN);
+        if (is_exists_missing_fields) return is_exists_missing_fields;
+
+        const is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC);
+
+        if (!is_existing_database_user) {
+            return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({ 
+                Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE 
+            });
+        }
+        if ('registered_user_password' in is_existing_database_user) {
+            const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(registered_user_password, is_existing_database_user.registered_user_password);
+            
+            console.log("Password validation result: ", is_password_valid);
+
+            if (is_password_valid) {
+
+                const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
+                return response.status(HTTPS_STATUS_CODE.OK).json({
+                    success: true,
+                    message: [{
+                        SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+                        USER_ROLE: RolesSpecified.USER_DESC,
+                        AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
+                    }],
+                    userInfo: is_existing_database_user,
+                    token: token_for_authentication_generated
+                });
+            } else {
+                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                    Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
+                });
+            }
+        }
+
+        return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+            Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
+        });
+
+    } catch (error: any) {
+        console.error("Error in letting_user_login:", error);
+        return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            Error: "An error occurred during login. Please try again later.",
+            Details: error.message
+        });
+    }
 };
 
 
@@ -117,10 +145,10 @@ export const verify_email_provided_user = async (request: AuthenticatedRequest, 
 export const resend_otp_for_verification_request = async (request: AuthenticatedRequest, response: Response) => {
     try {
         const fetched_loggedin_user = request.user;
-        if (!fetched_loggedin_user) throw new Error("User not found");
+        if (!fetched_loggedin_user) throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
 
         if (!fetched_loggedin_user.is_user_verified) {
-            const redefining_otp_generation = Math.floor(100000 + Math.random() * 900000).toString();
+            const redefining_otp_generation = OTP_GENERATOR_CALLED(request.user.otp_for_verification,request.user.otp_for_verification)
             fetched_loggedin_user.otp_for_verification = redefining_otp_generation;
             await fetched_loggedin_user.save();
 

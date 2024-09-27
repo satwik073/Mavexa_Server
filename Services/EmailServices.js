@@ -62,7 +62,7 @@ const email_service_enabled = (email_sending_data_wrapped) => __awaiter(void 0, 
                     To: [{ Email: Modifier.RC_EMAIL_CONFIG, Name: Modifier.RC_USER }],
                     Subject: `${Modifier.PD_C}`,
                     TextPart: `${Modifier.RC_USER} ${Modifier.VR_OTP}${Modifier.PD_C}${Modifier.PD_C}`,
-                    HTMLPart: mail_generating_content
+                    HTMLPart: mail_generating_content,
                 }
             ]
         });

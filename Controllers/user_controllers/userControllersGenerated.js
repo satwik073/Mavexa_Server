@@ -50,11 +50,17 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
             return is_exists_missing_fields;
         yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC);
         const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
-        const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_email);
+        const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_password);
         const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = yield (0, ErrorHandlerReducer_1.TRACKING_DATA_OBJECT)({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, structure_1.default.USER_DESC);
         return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
             success: true,
-            message_Displayed: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC),
+            message: [
+                {
+                    SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_REGISTRATION, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                    USER_ROLE: structure_1.default.USER_DESC,
+                    AUTH_TYPE: structure_1.AuthTypeDeclared.USER_REGISTRATION
+                },
+            ],
             userInfo: new_registered_user_defined,
             token: token_for_authentication_generated
         });
@@ -69,32 +75,50 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const { registered_user_email, registered_user_password } = request.body;
-    const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
-    if (is_exists_missing_fields)
-        return is_exists_missing_fields;
-    const is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
-    return !is_existing_database_user
-        ? response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE })
-        : 'registered_user_password' in is_existing_database_user
-            ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_email, is_existing_database_user.registered_user_password))
-                ? (() => __awaiter(void 0, void 0, void 0, function* () {
-                    const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
-                    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
-                        success: true,
-                        message: [
-                            {
-                                SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-                                USER_ROLE: structure_1.default.USER_DESC,
-                                AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
-                            },
-                        ],
-                        userInfo: is_existing_database_user,
-                        token: token_for_authentication_generated
-                    });
-                }))()
-                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC))
-            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC));
+    try {
+        const { registered_user_email, registered_user_password } = request.body;
+        const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+        if (is_exists_missing_fields)
+            return is_exists_missing_fields;
+        const is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+        if (!is_existing_database_user) {
+            return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
+            });
+        }
+        if ('registered_user_password' in is_existing_database_user) {
+            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.registered_user_password);
+            console.log("Password validation result: ", is_password_valid);
+            if (is_password_valid) {
+                const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
+                return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+                    success: true,
+                    message: [{
+                            SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                            USER_ROLE: structure_1.default.USER_DESC,
+                            AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
+                        }],
+                    userInfo: is_existing_database_user,
+                    token: token_for_authentication_generated
+                });
+            }
+            else {
+                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                    Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
+                });
+            }
+        }
+        return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+            Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
+        });
+    }
+    catch (error) {
+        console.error("Error in letting_user_login:", error);
+        return response.status(server_1.HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            Error: "An error occurred during login. Please try again later.",
+            Details: error.message
+        });
+    }
 });
 exports.letting_user_login = letting_user_login;
 const verify_email_provided_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -124,9 +148,9 @@ const resend_otp_for_verification_request = (request, response) => __awaiter(voi
     try {
         const fetched_loggedin_user = request.user;
         if (!fetched_loggedin_user)
-            throw new Error("User not found");
+            throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
         if (!fetched_loggedin_user.is_user_verified) {
-            const redefining_otp_generation = Math.floor(100000 + Math.random() * 900000).toString();
+            const redefining_otp_generation = (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(request.user.otp_for_verification, request.user.otp_for_verification);
             fetched_loggedin_user.otp_for_verification = redefining_otp_generation;
             yield fetched_loggedin_user.save();
             yield (0, EmailServices_1.email_service_enabled)({

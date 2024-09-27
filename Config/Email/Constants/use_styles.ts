@@ -26,10 +26,11 @@ export const email_content_rendering = (
     product_by_company: string
 ): EmailDeliverablesContent[] => [
     { text_context: VariantsType.TEXT, content_rendering: `Hello ${recievers_username},` },
-    { text_context: VariantsType.TEXT, content_rendering: 'Here is your One-Time Password (OTP) for verifying your account:' },
+    { text_context: VariantsType.OTP_TRACES, content_rendering: `Complete Registration` },
+    { text_context: VariantsType.TEXT, content_rendering: 'We have received a request to verify your email address. Please use the OTP code below to complete the verification process:' },
     { text_context: VariantsType.OTP_TRACES, content_rendering: otp_for_verification },
-    { text_context: VariantsType.TEXT, content_rendering: 'If you did not request this code, please ignore this email.' },
-    { text_context: VariantsType.TEXT, content_rendering: `Thank you for choosing ${product_by_company}!` },
+    { text_context: VariantsType.TEXT, content_rendering: 'If you did not request this, please ignore this email or contact support if you have any concerns.' },
+    { text_context: VariantsType.TEXT, content_rendering: `Thank you for choosing ${product_by_company}` },
 ];
 
 export const useStyles = makeStyles((theme: any) => ({

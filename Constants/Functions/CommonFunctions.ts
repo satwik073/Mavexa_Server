@@ -12,10 +12,13 @@ export const OTP_GENERATOR_CALLED = async (entered_password_registration: string
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 export const SECURING_PASSCODE = async (entered_password_registration: string) => {
-
     const salted_credentials = await bcrypt.genSalt(10);
-    return await bcrypt.hash(entered_password_registration, salted_credentials);
-}
+    console.log("Salt generated during registration:", salted_credentials);
+    const hashed_password = await bcrypt.hash(entered_password_registration, salted_credentials);
+    console.log("Hashed password:", hashed_password);
+    return hashed_password;
+};
+
 export const DECODING_INCOMING_SECURITY_PASSCODE = async (user_entered_password: string, user_registered_password: string) => {
     return await bcrypt.compare(user_entered_password, user_registered_password);
 }
