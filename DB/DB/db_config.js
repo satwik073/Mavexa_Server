@@ -11,6 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReducer");
 const ErrorHandlerReducer_2 = require("../../Middlewares/Error/ErrorHandlerReducer");
+const dotenv = require('dotenv');
+dotenv.config();
 const connection_DB_estaiblished = (0, ErrorHandlerReducer_2.ASYNC_ERROR_HANDLER_ESTAIBLISHED)(() => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const url_session = ((_a = process.env.MONGO_DB_URL_ESTAIBLISHED) === null || _a === void 0 ? void 0 : _a.toString()) || '';

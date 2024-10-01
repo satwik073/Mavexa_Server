@@ -9,6 +9,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
+dotenv.config();
 
 connection_DB_estaiblished();
 
@@ -17,7 +18,6 @@ const app = express()
 app.use(bodyParser.json())
 app.use(cors())
 
-dotenv.config();
 const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
 
 app.use('/api/v1/', user_controlling_routes);
