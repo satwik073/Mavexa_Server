@@ -5,7 +5,7 @@ import { ASYNC_ERROR_HANDLER_ESTAIBLISHED, EXISTING_USER_FOUND_IN_DATABASE, MISS
 import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import user_detailed_description from "../../Model/user_model/UserRegisteringModal";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
-import { HTTPS_STATUS_CODE } from "../../server";
+import HTTPS_STATUS_CODE from "http-status-codes";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 
 interface AdminRegistrationModel {

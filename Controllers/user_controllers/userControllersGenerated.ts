@@ -8,7 +8,7 @@ import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DAT
 import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
 import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
-import { HTTPS_STATUS_CODE } from "../../server";
+import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
 import { NOTFOUND } from "dns";
 

@@ -19,7 +19,7 @@ const structure_1 = __importDefault(require("../../Common/structure"));
 const RoutesFormed_1 = require("../../Constants/RoutesDefined/RoutesFormed");
 const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
-const server_1 = require("../../server");
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const is_authenticated_user = (request, response, next_forward) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { authorization } = request.headers;
@@ -35,10 +35,10 @@ const is_authenticated_user = (request, response, next_forward) => __awaiter(voi
             console.log(decoding_token_data);
             const user = (modified_token_role === structure_1.default.USER_DESC) ? yield UserRegisteringModal_1.default.findById(decoding_token_data.id) : (modified_token_role === structure_1.default.ADMIN_DESC) ? yield AdminDataModel_1.default.findById(decoding_token_data.id) : null;
             if (!user && modified_token_role === structure_1.default.USER_DESC) {
-                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE });
+                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE });
             }
             else if (!user && modified_token_role === structure_1.default.ADMIN_DESC) {
-                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.ADMIN_DESC).MESSAGE });
+                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.ADMIN_DESC).MESSAGE });
             }
             request.user = user;
             return (user === null || user === void 0 ? void 0 : user.authorities_provided_by_role) === structure_1.default.ADMIN_DESC

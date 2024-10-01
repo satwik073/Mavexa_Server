@@ -5,7 +5,7 @@ import RolesSpecified from '../../Common/structure';
 import { ADMIN_SUPPORT_CONFIGURATION , USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesDefined/RoutesFormed';
 import admin_detailed_structure_description from '../../Model/admin_model/AdminDataModel';
 import { DEFAULT_EXECUTED } from '../../Constants/Errors/PreDefinedErrors';
-import { HTTPS_STATUS_CODE } from '../../server';
+import HTTPS_STATUS_CODE from "http-status-codes";
 
 interface AuthenticatedRequest extends Request {
     user?: any;

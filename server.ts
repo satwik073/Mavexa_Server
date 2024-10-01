@@ -9,7 +9,6 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
-const HTTPS_STATUS_CODE = require('http-status-codes')
 const app = express()
 
 app.use(bodyParser.json())
@@ -27,5 +26,3 @@ app.listen(PORT_ESTAIBLISHED, async () => {
     connection_DB_estaiblished();
     console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
 });
-
-export {HTTPS_STATUS_CODE};

@@ -12,7 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HTTPS_STATUS_CODE = void 0;
 require("./Common/instrument");
 const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
@@ -22,8 +21,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const HTTPS_STATUS_CODE = require('http-status-codes');
-exports.HTTPS_STATUS_CODE = HTTPS_STATUS_CODE;
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());

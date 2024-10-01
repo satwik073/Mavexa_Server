@@ -31,6 +31,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = void 0;
 const jwt = require('jsonwebtoken');
@@ -40,7 +43,7 @@ const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReduc
 const structure_1 = __importStar(require("../../Common/structure"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
-const server_1 = require("../../server");
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
 const letting_user_registered = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -52,7 +55,7 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
         const otp_generating_code_block = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(registered_user_email);
         const hashed_password_generated = yield (0, CommonFunctions_1.SECURING_PASSCODE)(registered_user_password);
         const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = yield (0, ErrorHandlerReducer_1.TRACKING_DATA_OBJECT)({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, structure_1.default.USER_DESC);
-        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+        return response.status(http_status_codes_1.default.OK).json({
             success: true,
             message: [
                 {
@@ -67,7 +70,7 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
     }
     catch (error_value_displayed) {
         console.error("Error in user registration:", error_value_displayed);
-        return response.status(server_1.HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: PreDefinedErrors_1.ERROR_VALUES_FETCHER.USER_FOUND_OR_NOT_CONTROLLED(structure_1.AuthTypeDeclared.USER_REGISTRATION).USER_REGISTRATION_SUPPORT
         });
@@ -82,7 +85,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
             return is_exists_missing_fields;
         const is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
         if (!is_existing_database_user) {
-            return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+            return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                 Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
             });
         }
@@ -91,7 +94,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
             console.log("Password validation result: ", is_password_valid);
             if (is_password_valid) {
                 const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
-                return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+                return response.status(http_status_codes_1.default.OK).json({
                     success: true,
                     message: [{
                             SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
@@ -103,18 +106,18 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                 });
             }
             else {
-                return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                     Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
                 });
             }
         }
-        return response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+        return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
             Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
         });
     }
     catch (error) {
         console.error("Error in letting_user_login:", error);
-        return response.status(server_1.HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
             Error: "An error occurred during login. Please try again later.",
             Details: error.message
         });
@@ -217,7 +220,7 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
         if (!fetched_loggedin_user)
             throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
         console.log(fetched_loggedin_user);
-        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+        return response.status(http_status_codes_1.default.OK).json({
             success: true,
             message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
             userInfo: fetched_loggedin_user

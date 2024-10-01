@@ -42,7 +42,7 @@ const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReduc
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
 const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
-const server_1 = require("../../server");
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 exports.authorized_admin_account = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_ESTAIBLISHED)((request, response) => __awaiter(void 0, void 0, void 0, function* () {
     const { admin_userEmail, admin_userName, admin_userPassword } = request.body;
@@ -55,7 +55,7 @@ exports.authorized_admin_account = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER
     yield admin_registration_data.save();
     if (admin_registration_data) {
         const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(admin_registration_data.id);
-        return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+        return response.status(http_status_codes_1.default.OK).json({
             success: true,
             message: [
                 {
@@ -81,7 +81,7 @@ exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_E
             ? (yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(admin_userPassword, is_admin_credentials_valid.admin_userPassword))
                 ? (() => __awaiter(void 0, void 0, void 0, function* () {
                     const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_admin_credentials_valid._id);
-                    return response.status(server_1.HTTPS_STATUS_CODE.OK).json({
+                    return response.status(http_status_codes_1.default.OK).json({
                         success: true,
                         message: [
                             {
@@ -94,8 +94,8 @@ exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_E
                         token: token_for_authentication_generated
                     });
                 }))()
-                : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC))
-            : response.status(server_1.HTTPS_STATUS_CODE.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC));
+                : response.status(http_status_codes_1.default.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.ADMIN_DESC))
+            : response.status(http_status_codes_1.default.UNAUTHORIZED).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC));
 }));
 const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
