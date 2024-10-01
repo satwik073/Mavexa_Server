@@ -26,9 +26,6 @@ app.use(bodyParser.json());
 app.use(cors());
 dotenv.config();
 const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
-app.use('/', (Request, Response) => {
-    Response.send('API is working');
-});
 app.use('/api/v1/', userRouter_1.default);
 app.use('/api/v1/controls', adminRoutes_1.default);
 Sentry.setupExpressErrorHandler(app);
