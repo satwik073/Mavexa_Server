@@ -14,14 +14,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HTTPS_STATUS_CODE = void 0;
 require("./Common/instrument");
+const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
+const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
+const db_config_1 = __importDefault(require("./DB/DB/db_config"));
 const Sentry = require("@sentry/node");
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
-const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
-const db_config_1 = __importDefault(require("./DB/DB/db_config"));
+const HTTPS_STATUS_CODE = require('http-status-codes');
+exports.HTTPS_STATUS_CODE = HTTPS_STATUS_CODE;
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
@@ -37,5 +39,4 @@ app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* 
     (0, db_config_1.default)();
     console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
 }));
-exports.HTTPS_STATUS_CODE = require('http-status-codes');
 //# sourceMappingURL=server.js.map
