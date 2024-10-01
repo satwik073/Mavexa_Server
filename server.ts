@@ -19,6 +19,9 @@ const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
 if (!PORT_ESTAIBLISHED) {
     console.log("Can't reach out to port");
 } else {
+    app.use('/', (Request: Request , Response : Response)=>{
+        Response.send('API is working')
+    })
     app.use('/api/v1/', user_controlling_routes);
     app.use('/api/v1/controls', admin_controlling_routes)
     Sentry.setupExpressErrorHandler(app);
