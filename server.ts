@@ -26,7 +26,7 @@ if (!PORT_ESTAIBLISHED) {
     app.use('/api/v1/controls', admin_controlling_routes)
     Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, async () => {
-        await connection_DB_estaiblished();
+        connection_DB_estaiblished();
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
     });
 }

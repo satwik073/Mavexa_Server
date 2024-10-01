@@ -72,3 +72,5 @@ ehthumbs.db
 
 # Sentry Config File
 .sentryclirc
+
+.vercel

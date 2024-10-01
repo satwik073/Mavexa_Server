@@ -39,7 +39,7 @@ else {
     app.use('/api/v1/controls', adminRoutes_1.default);
     Sentry.setupExpressErrorHandler(app);
     app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
-        yield (0, db_config_1.default)();
+        (0, db_config_1.default)();
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
     }));
 }
