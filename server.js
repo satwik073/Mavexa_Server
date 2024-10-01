@@ -21,6 +21,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
+(0, db_config_1.default)();
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
@@ -30,7 +31,6 @@ app.use('/api/v1/', userRouter_1.default);
 app.use('/api/v1/controls', adminRoutes_1.default);
 Sentry.setupExpressErrorHandler(app);
 app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
-    (0, db_config_1.default)();
     console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
 }));
 //# sourceMappingURL=server.js.map

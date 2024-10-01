@@ -9,6 +9,9 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const dotenv = require('dotenv')
+
+connection_DB_estaiblished();
+
 const app = express()
 
 app.use(bodyParser.json())
@@ -21,6 +24,5 @@ app.use('/api/v1/', user_controlling_routes);
 app.use('/api/v1/controls', admin_controlling_routes)
 Sentry.setupExpressErrorHandler(app);
 app.listen(PORT_ESTAIBLISHED, async () => {
-    connection_DB_estaiblished();
     console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
 });
