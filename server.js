@@ -23,24 +23,19 @@ const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter")
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./DB/DB/db_config"));
 const app = express();
-exports.HTTPS_STATUS_CODE = require('http-status-codes');
 app.use(bodyParser.json());
 app.use(cors());
 dotenv.config();
 const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
-if (!PORT_ESTAIBLISHED) {
-    console.log("Can't reach out to port");
-}
-else {
-    app.use('/', (Request, Response) => {
-        Response.send('API is working');
-    });
-    app.use('/api/v1/', userRouter_1.default);
-    app.use('/api/v1/controls', adminRoutes_1.default);
-    Sentry.setupExpressErrorHandler(app);
-    app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
-        (0, db_config_1.default)();
-        console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
-    }));
-}
+app.use('/', (Request, Response) => {
+    Response.send('API is working');
+});
+app.use('/api/v1/', userRouter_1.default);
+app.use('/api/v1/controls', adminRoutes_1.default);
+Sentry.setupExpressErrorHandler(app);
+app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, db_config_1.default)();
+    console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
+}));
+exports.HTTPS_STATUS_CODE = require('http-status-codes');
 //# sourceMappingURL=server.js.map
