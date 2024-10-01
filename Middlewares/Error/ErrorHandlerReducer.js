@@ -43,7 +43,7 @@ const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminD
 const mongoose_1 = __importDefault(require("mongoose"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const EmailServices_1 = require("../../Services/EmailServices");
-const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn) => (request, response, next_function) => { (request && response && next_function) && Promise.resolve(fn(request, response, next_function)).catch(next_function); };
+const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn) => (request, response, next_function) => { (request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn(); };
 exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = ASYNC_ERROR_HANDLER_ESTAIBLISHED;
 const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression, response, user_auth_type_specified) => {
     for (const [key_validator, value_validator] of Object.entries(fields_parameter_expression)) {

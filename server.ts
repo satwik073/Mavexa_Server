@@ -1,5 +1,5 @@
 require("./Common/instrument")
-import { Request, Response, NextFunction } from 'express';
+import { Request ,Response , NextFunction } from 'express';
 import user_controlling_routes from './Routes/user_routers/userRouter'
 import admin_controlling_routes from './Routes/admin_routes/adminRoutes'
 import connection_DB_estaiblished from './DB/DB/db_config'
@@ -17,7 +17,7 @@ app.use(cors())
 
 dotenv.config();
 const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
-app.use('/', (Request: Request, Response: Response) => {
+app.use('/', (Request: Request , Response : Response)=>{
     Response.send('API is working')
 })
 app.use('/api/v1/', user_controlling_routes);
@@ -28,4 +28,4 @@ app.listen(PORT_ESTAIBLISHED, async () => {
     console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
 });
 
-export { HTTPS_STATUS_CODE };
+export {HTTPS_STATUS_CODE};

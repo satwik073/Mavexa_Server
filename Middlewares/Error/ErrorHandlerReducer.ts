@@ -6,7 +6,7 @@ import admin_detailed_structure_description from "../../Model/admin_model/AdminD
 import mongoose from "mongoose"
 import { JWT_KEY_GENERATION_ONBOARDED } from "../../Constants/Functions/CommonFunctions";
 import { email_service_enabled } from "../../Services/EmailServices";
-export const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn: Function) => (request?: Request, response?: Response, next_function?: NextFunction) => {(request && response && next_function) && Promise.resolve(fn(request, response, next_function)).catch(next_function)}
+export const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn: Function) => (request?: Request, response?: Response, next_function?: NextFunction) => {(request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn()}
 
 
 export const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression: Record<string, any>, response: Response, user_auth_type_specified: AuthTypeDeclared) => {
