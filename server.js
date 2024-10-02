@@ -16,6 +16,8 @@ require("./Common/instrument");
 const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./DB/DB/db_config"));
+const operatingSystem = require('os');
+const clusterPremises = require('cluster');
 const Sentry = require("@sentry/node");
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -23,14 +25,31 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 dotenv.config();
 (0, db_config_1.default)();
-const app = express();
-app.use(bodyParser.json());
-app.use(cors());
-const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
-app.use('/api/v1/', userRouter_1.default);
-app.use('/api/v1/controls', adminRoutes_1.default);
-Sentry.setupExpressErrorHandler(app);
-app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
-}));
+const server_configs = () => {
+    const app = express();
+    app.use(bodyParser.json());
+    app.use(cors());
+    Sentry.setupExpressErrorHandler(app);
+    const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
+    app.use('/api/v1/', userRouter_1.default);
+    app.use('/api/v1/controls', adminRoutes_1.default);
+    app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
+    }));
+};
+if (clusterPremises.isMaster) {
+    const numCPUs = operatingSystem.cpus().length;
+    console.log(`Master process ${process.pid} is running`);
+    console.log(`Forking server for ${numCPUs} CPUs`);
+    for (let i = 0; i < numCPUs; i++) {
+        clusterPremises.fork();
+    }
+    clusterPremises.on('exit', (worker, code, signal) => {
+        console.log(`Worker ${worker.process.pid} died. Starting a new worker...`);
+        clusterPremises.fork();
+    });
+}
+else {
+    server_configs();
+}
 //# sourceMappingURL=server.js.map
