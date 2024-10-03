@@ -27,7 +27,7 @@ loadEnvironmentVariables();
 connection_DB_estaiblished();
 
 const initializeRedisClient = async (): Promise<RedisClientType> => {
-    const redisClient = createClient();
+    const redisClient = createClient({url: 'redis-cli -u redis://default: FuuTU5U9SPJCImOSijSfPsZKQwvbYnnU@redis-16693.c267.us-east-1-4.ec2.redns.redis-cloud.com:16693'})
     redisClient.on('connect', () => {
         console.log('Connected to Redis');
     });
