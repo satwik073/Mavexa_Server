@@ -46,7 +46,7 @@ const is_authenticated_user = (request, response, next_forward) => __awaiter(voi
                     ? next_forward()
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                 : (user === null || user === void 0 ? void 0 : user.authorities_provided_by_role) === structure_1.default.USER_DESC
-                    ? ([RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password].includes(request.path)
+                    ? ([RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.verify_email_portal].includes(request.path)
                         ? next_forward()
                         : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                     : response.status(403).json({ Error: "Forbidden: Invalid user role", details: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.EMPTY).MESSAGE });

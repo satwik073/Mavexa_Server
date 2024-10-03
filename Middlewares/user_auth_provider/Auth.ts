@@ -44,7 +44,7 @@ export const is_authenticated_user = async (request: Request, response: Response
                 ? next_forward() 
                 : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
             : user?.authorities_provided_by_role === RolesSpecified.USER_DESC 
-                ? ([USER_SUPPORT_CONFIGURATION.user_profile, USER_SUPPORT_CONFIGURATION.user_reverification, USER_SUPPORT_CONFIGURATION.reset_user_password].includes(request.path) 
+                ? ([USER_SUPPORT_CONFIGURATION.user_profile, USER_SUPPORT_CONFIGURATION.user_reverification, USER_SUPPORT_CONFIGURATION.reset_user_password , USER_SUPPORT_CONFIGURATION.verify_email_portal].includes(request.path) 
                     ? next_forward() 
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                 : response.status(403).json({ Error: "Forbidden: Invalid user role", details : DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.EMPTY).MESSAGE});
