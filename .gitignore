@@ -11,6 +11,7 @@ yarn.lock
 .env
 .env.production
 .env.staging
+.env.development
 # Optional eslint cache
 .eslintcache
 
