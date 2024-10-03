@@ -5,8 +5,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "start:staging": "NODE_ENV=staging node server.js",
     "postinstall": "npm rebuild bcrypt",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org satwik-qv --project saasy-monitoring-responses ./ && sentry-cli sourcemaps upload --org satwik-qv --project saasy-monitoring-responses ./"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org satwik-qv --project saasy-monitoring-responses ./ && sentry-cli sourcemaps upload --org satwik-qv --project saasy-monitoring-responses ./",
+    "sentry:sourcemaps:prod": "sentry-cli sourcemaps inject --org satwik-qv --project saasy-monitoring-responses ./ && sentry-cli sourcemaps upload --org satwik-qv --project saasy-monitoring-responses ./ --env production",
+    "sentry:sourcemaps:staging": "sentry-cli sourcemaps inject --org satwik-qv --project saasy-monitoring-responses ./ && sentry-cli sourcemaps upload --org satwik-qv --project saasy-monitoring-responses ./ --env staging"
   },
   "keywords": [],
   "author": "",

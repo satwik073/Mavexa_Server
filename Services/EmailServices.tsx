@@ -5,10 +5,20 @@ import { EMAIL_CONFIG_TEMPLATE } from '../Config/Email/Constants/use_styles';
 import RolesSpecified, { EmailResponseControllingError, SendingEmailToUser } from '../Common/structure';
 import { DEFAULT_EXECUTED } from '../Constants/Errors/PreDefinedErrors';
 import { EMAIL_SESSION_RELAY } from '../Constants/Success/PreDefinedSuccess';
+import path from 'path';
 
-dotenv.config();
-
-
+const env = process.argv[2] === 'prod' ? 'production' : 'staging';
+if ( env && process.env.VERCEL_ENV) {
+    console.log(`Running on Vercel in ${process.env.VERCEL_ENV} mode.`);
+    if (process.env.VERCEL_ENV === 'production') {
+        dotenv.config({ path: path.resolve(__dirname, './.env.production') });
+    } else {
+        dotenv.config({ path: path.resolve(__dirname, './.env.staging') });
+    }
+}
+else {
+     dotenv.config()
+}
 
 const mailjet = require('node-mailjet')
     .apiConnect(process.env.MJ_APIKEY_PUBLIC, process.env.MJ_APIKEY_PRIVATE);

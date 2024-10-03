@@ -43,7 +43,20 @@ const use_styles_1 = require("../Config/Email/Constants/use_styles");
 const structure_1 = __importStar(require("../Common/structure"));
 const PreDefinedErrors_1 = require("../Constants/Errors/PreDefinedErrors");
 const PreDefinedSuccess_1 = require("../Constants/Success/PreDefinedSuccess");
-dotenv_1.default.config();
+const path_1 = __importDefault(require("path"));
+const env = process.argv[2] === 'prod' ? 'production' : 'staging';
+if (env && process.env.VERCEL_ENV) {
+    console.log(`Running on Vercel in ${process.env.VERCEL_ENV} mode.`);
+    if (process.env.VERCEL_ENV === 'production') {
+        dotenv_1.default.config({ path: path_1.default.resolve(__dirname, './.env.production') });
+    }
+    else {
+        dotenv_1.default.config({ path: path_1.default.resolve(__dirname, './.env.staging') });
+    }
+}
+else {
+    dotenv_1.default.config();
+}
 const mailjet = require('node-mailjet')
     .apiConnect(process.env.MJ_APIKEY_PUBLIC, process.env.MJ_APIKEY_PRIVATE);
 const email_service_enabled = (email_sending_data_wrapped) => __awaiter(void 0, void 0, void 0, function* () {
