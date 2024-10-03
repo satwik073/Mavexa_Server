@@ -20,6 +20,7 @@ export enum VariantsType {
 }
 
 export interface UserDocument extends Document {
+    registered_username : string;
     registered_user_email: string;
     registered_user_password: string;
     authorities_provided_by_role : RolesSpecified
