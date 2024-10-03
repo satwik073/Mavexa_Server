@@ -43,7 +43,7 @@ const JWT_KEY_GENERATION_ONBOARDED = (user_generated_id) => __awaiter(void 0, vo
     const SECRET_KEY_FETCHED = process.env.JWT_SECRET_KEY_ATTACHED;
     if (!SECRET_KEY_FETCHED)
         throw new Error(PreDefinedErrors_1.ERROR_VALUES_FETCHER.JWT_DETECTED_ERRORS.JWT_NOT_DETECTED);
-    return jwt.sign({ id: user_generated_id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' });
+    return jwt.sign({ id: user_generated_id }, SECRET_KEY_FETCHED, { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d', algorithm: 'HS256' });
 });
 exports.JWT_KEY_GENERATION_ONBOARDED = JWT_KEY_GENERATION_ONBOARDED;
 const MODIFIED_STATE_SETTER = (user_auth_type_specified, request, user_registered_email, user_entered_password, user_entered_otp_request, user_entered_userName, admin_user_email, admin_userPassword, admin_userName, is_user_verified) => __awaiter(void 0, void 0, void 0, function* () {

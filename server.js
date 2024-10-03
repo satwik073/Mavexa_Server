@@ -17,6 +17,7 @@ const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter")
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./DB/DB/db_config"));
 const path_1 = __importDefault(require("path"));
+const redis_1 = require("redis");
 const operatingSystem = require('os');
 const clusterPremises = require('cluster');
 const Sentry = require("@sentry/node");
@@ -24,6 +25,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const compression = require('compression');
 const loadEnvironmentVariables = () => {
     const envFile = process.env.VERCEL_ENV === 'production'
         ? './.env.production'
@@ -33,18 +35,35 @@ const loadEnvironmentVariables = () => {
 };
 loadEnvironmentVariables();
 (0, db_config_1.default)();
-const server_configs = () => {
+const initializeRedisClient = () => __awaiter(void 0, void 0, void 0, function* () {
+    const redisClient = (0, redis_1.createClient)();
+    redisClient.on('connect', () => {
+        console.log('Connected to Redis');
+    });
+    redisClient.on('error', (err) => {
+        console.error('Redis error:', err);
+    });
+    yield redisClient.connect();
+    return redisClient;
+});
+const server_configs = () => __awaiter(void 0, void 0, void 0, function* () {
     const app = express();
+    const redisClient = yield initializeRedisClient();
+    app.use(compression());
     app.use(bodyParser.json());
     app.use(cors());
-    Sentry.setupExpressErrorHandler(app);
+    app.use((req, res, next) => {
+        req.redisClient = redisClient;
+        next();
+    });
+    Sentry.init({ dsn: process.env.SENTRY_DSN });
     const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
     app.use('/api/v1/', userRouter_1.default);
     app.use('/api/v1/controls', adminRoutes_1.default);
-    app.listen(PORT_ESTAIBLISHED, () => __awaiter(void 0, void 0, void 0, function* () {
+    app.listen(PORT_ESTAIBLISHED, () => {
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
-    }));
-};
+    });
+});
 if (!process.env.VERCEL_ENV) {
     if (clusterPremises.isMaster) {
         const numCPUs = operatingSystem.cpus().length;
@@ -53,7 +72,7 @@ if (!process.env.VERCEL_ENV) {
         for (let i = 0; i < numCPUs; i++) {
             clusterPremises.fork();
         }
-        clusterPremises.on('exit', (worker, code, signal) => {
+        clusterPremises.on('exit', (worker) => {
             console.log(`Worker ${worker.process.pid} died. Starting a new worker...`);
             clusterPremises.fork();
         });

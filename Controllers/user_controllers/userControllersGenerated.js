@@ -78,20 +78,57 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         const { registered_user_email, registered_user_password } = request.body;
+        let cachedUserData;
+        console.log('Received login request for:', registered_user_email);
         const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
         if (is_exists_missing_fields)
             return is_exists_missing_fields;
-        const is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+        try {
+            cachedUserData = yield ((_a = request === null || request === void 0 ? void 0 : request.redisClient) === null || _a === void 0 ? void 0 : _a.get(`user:${registered_user_email}`));
+        }
+        catch (err) {
+            console.error('Error fetching data from Redis:', err);
+        }
+        let is_existing_database_user;
+        if (cachedUserData) {
+            console.log('User data retrieved from Redis cache');
+            is_existing_database_user = JSON.parse(cachedUserData);
+        }
+        else {
+            console.log('No cache found, fetching user data from database');
+            is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+            if (is_existing_database_user) {
+                try {
+                    console.log('Caching user data in Redis');
+                    if ('registered_user_email' in is_existing_database_user && 'registered_username' in is_existing_database_user && 'authorities_provided_by_role' in is_existing_database_user && '_id' in is_existing_database_user) {
+                        const userDataToCache = {
+                            id: is_existing_database_user._id,
+                            email: is_existing_database_user.registered_user_email,
+                            username: is_existing_database_user.registered_username,
+                            role: is_existing_database_user.authorities_provided_by_role,
+                        };
+                        yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache), {
+                            EX: 3600
+                        }));
+                    }
+                }
+                catch (err) {
+                    console.error('Error setting data in Redis:', err);
+                }
+            }
+        }
         if (!is_existing_database_user) {
+            console.log('User not found');
             return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                 Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
             });
         }
         if ('registered_user_password' in is_existing_database_user) {
             const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.registered_user_password);
-            console.log("Password validation result: ", is_password_valid);
+            console.log('Password validation result:', is_password_valid);
             if (is_password_valid) {
                 const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
                 return response.status(http_status_codes_1.default.OK).json({
@@ -106,19 +143,23 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                 });
             }
             else {
+                console.log('Invalid password');
                 return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                     Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
                 });
             }
+        }
+        else {
+            console.log('Password field not found in user data');
         }
         return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
             Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
         });
     }
     catch (error) {
-        console.error("Error in letting_user_login:", error);
+        console.error('Error in letting_user_login:', error);
         return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
-            Error: "An error occurred during login. Please try again later.",
+            Error: 'An error occurred during login. Please try again later.',
             Details: error.message
         });
     }
@@ -215,11 +256,28 @@ const reset_password_for_verified_user = (request, response) => __awaiter(void 0
 });
 exports.reset_password_for_verified_user = reset_password_for_verified_user;
 const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
+        let cachedUserData;
+        try {
+            cachedUserData = yield ((_a = request === null || request === void 0 ? void 0 : request.redisClient) === null || _a === void 0 ? void 0 : _a.get(`user:${(_b = request.user) === null || _b === void 0 ? void 0 : _b.registered_user_email}`));
+        }
+        catch (err) {
+            console.error('Error fetching data from Redis:', err);
+        }
+        if (cachedUserData) {
+            console.log('User data retrieved from Redis cache');
+            return response.status(http_status_codes_1.default.OK).json({
+                success: true,
+                message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                userInfo: JSON.parse(cachedUserData)
+            });
+        }
         const fetched_loggedin_user = request.user;
-        if (!fetched_loggedin_user)
+        if (!fetched_loggedin_user) {
             throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
-        console.log(fetched_loggedin_user);
+        }
+        console.log('User data fetched from request');
         return response.status(http_status_codes_1.default.OK).json({
             success: true,
             message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
@@ -227,7 +285,12 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
         });
     }
     catch (error_value_displayed) {
-        return response.status(500).json({ Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR, details: error_value_displayed.message, NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE });
+        console.error('Error in get_user_profile:', error_value_displayed);
+        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
+            Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR,
+            details: error_value_displayed.message,
+            NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
+        });
     }
 });
 exports.get_user_profile = get_user_profile;

@@ -33,7 +33,7 @@ export const JWT_KEY_GENERATION_ONBOARDED = async (user_generated_id: string) =>
     return jwt.sign(
         { id: user_generated_id },
         SECRET_KEY_FETCHED,
-        { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' }
+        { expiresIn: process.env.JWT_EXPIRY_DATE_ASSIGNED || '30d' ,  algorithm: 'HS256' }
     );
 }
 
