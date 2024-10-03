@@ -9,6 +9,8 @@ yarn.lock
 # Optional npm cache directory
 .npm
 .env
+.env.production
+.env.staging
 # Optional eslint cache
 .eslintcache
 
