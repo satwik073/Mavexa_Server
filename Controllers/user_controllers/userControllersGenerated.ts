@@ -70,7 +70,6 @@ export const letting_user_login = async (request: Request, response: Response) =
     try {
         const { registered_user_email, registered_user_password } = request.body;
         let cachedUserData
-        console.log('Received login request for:', registered_user_email);
         const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR(
             { registered_user_email, registered_user_password },
             response,
@@ -85,10 +84,8 @@ export const letting_user_login = async (request: Request, response: Response) =
 
         let is_existing_database_user;
         if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         } else {
-            console.log('No cache found, fetching user data from database');
             is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(
                 registered_user_email,
                 AuthTypeDeclared.USER_LOGIN,
@@ -96,7 +93,6 @@ export const letting_user_login = async (request: Request, response: Response) =
             );
             if (is_existing_database_user) {
                 try {
-                    console.log('Caching user data in Redis');
                     if ('registered_user_email' in is_existing_database_user && 'registered_username' in is_existing_database_user && 'authorities_provided_by_role' in is_existing_database_user && '_id' in is_existing_database_user) {
                         const userDataToCache: any = {
                             id: is_existing_database_user._id,
@@ -120,19 +116,15 @@ export const letting_user_login = async (request: Request, response: Response) =
             }
         }
         if (!is_existing_database_user) {
-            console.log('User not found');
             return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
                 Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
             });
         }
-        if ('registered_user_password' in is_existing_database_user) {
+        if ( is_existing_database_user) {
             const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
                 registered_user_password,
-                is_existing_database_user.registered_user_password
+                is_existing_database_user.password
             );
-
-            console.log('Password validation result:', is_password_valid);
-
             if (is_password_valid) {
                 const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
                 return response.status(HTTPS_STATUS_CODE.OK).json({

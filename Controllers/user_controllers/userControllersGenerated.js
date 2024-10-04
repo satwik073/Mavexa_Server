@@ -82,7 +82,6 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
     try {
         const { registered_user_email, registered_user_password } = request.body;
         let cachedUserData;
-        console.log('Received login request for:', registered_user_email);
         const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
         if (is_exists_missing_fields)
             return is_exists_missing_fields;
@@ -94,15 +93,12 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
         }
         let is_existing_database_user;
         if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         }
         else {
-            console.log('No cache found, fetching user data from database');
             is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
             if (is_existing_database_user) {
                 try {
-                    console.log('Caching user data in Redis');
                     if ('registered_user_email' in is_existing_database_user && 'registered_username' in is_existing_database_user && 'authorities_provided_by_role' in is_existing_database_user && '_id' in is_existing_database_user) {
                         const userDataToCache = {
                             id: is_existing_database_user._id,
@@ -121,14 +117,12 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
             }
         }
         if (!is_existing_database_user) {
-            console.log('User not found');
             return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                 Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
             });
         }
-        if ('registered_user_password' in is_existing_database_user) {
-            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.registered_user_password);
-            console.log('Password validation result:', is_password_valid);
+        if (is_existing_database_user) {
+            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.password);
             if (is_password_valid) {
                 const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
                 return response.status(http_status_codes_1.default.OK).json({
