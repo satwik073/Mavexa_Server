@@ -48,7 +48,7 @@ exports.ERROR_VALUES_FETCHER = {
 };
 exports.DATABASE_CONNECTION_REQUEST_HANDLER = {
     DATABASE_CONNECTION_REQUEST: (database_connection_request) => ({
-        MESSAGE: (database_connection_request === structure_1.DatabaseTrace.SUCCESS_FETCHING) ? `Connection ${structure_1.DatabaseTrace.SUCCESS_FETCHING}fuly estaiblished between client and server` : (database_connection_request === structure_1.DatabaseTrace.ERROR_ENCOUNTERED) ? `Connection between client and server can't be estaiblished` : (database_connection_request === structure_1.DatabaseTrace.DEFAULT_PARAMETER) ? `MONGO_DB_URL_ESTAIBLISHED is not defined in environment variables` : `Connection between client and server can't be estaiblished`
+        MESSAGE: (database_connection_request === structure_1.DatabaseTrace.SUCCESS_FETCHING) ? `🆗 Connection ${structure_1.DatabaseTrace.SUCCESS_FETCHING}fuly estaiblished between client and server` : (database_connection_request === structure_1.DatabaseTrace.ERROR_ENCOUNTERED) ? `Connection between client and server can't be estaiblished` : (database_connection_request === structure_1.DatabaseTrace.DEFAULT_PARAMETER) ? `MONGO_DB_URL_ESTAIBLISHED is not defined in environment variables` : `Connection between client and server can't be estaiblished`
     })
 };
 //# sourceMappingURL=PreDefinedErrors.js.map
