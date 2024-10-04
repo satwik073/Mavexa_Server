@@ -70,7 +70,7 @@ const server_configs = () => __awaiter(void 0, void 0, void 0, function* () {
         console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
     });
 });
-if (!process.env.VERCEL_ENV) {
+if (process.env.VERCEL_ENV) {
     if (clusterPremises.isMaster) {
         const numCPUs = operatingSystem.cpus().length;
         console.log(`Master process ${process.pid} is running`);

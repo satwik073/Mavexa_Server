@@ -69,7 +69,7 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
 export const letting_user_login = async (request: Request, response: Response) => {
     try {
         const { registered_user_email, registered_user_password } = request.body;
-        let cachedUserData
+        let cachedUserData;
         const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR(
             { registered_user_email, registered_user_password },
             response,
@@ -83,21 +83,34 @@ export const letting_user_login = async (request: Request, response: Response) =
         }
 
         let is_existing_database_user;
+
         if (cachedUserData) {
+            console.log('User data retrieved from Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         } else {
+            console.log('No cache found, fetching user data from database');
             is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(
                 registered_user_email,
                 AuthTypeDeclared.USER_LOGIN,
                 RolesSpecified.USER_DESC
             );
+            console.log(is_existing_database_user)
+
             if (is_existing_database_user) {
                 try {
-                    if ('registered_user_email' in is_existing_database_user && 'registered_username' in is_existing_database_user && 'authorities_provided_by_role' in is_existing_database_user && '_id' in is_existing_database_user) {
+                    console.log('Caching user data in Redis');
+                    if (
+                        'registered_user_email' in is_existing_database_user &&
+                        'registered_user_password' in is_existing_database_user &&
+                        'registered_username' in is_existing_database_user &&
+                        'authorities_provided_by_role' in is_existing_database_user &&
+                        '_id' in is_existing_database_user
+                    ) {
                         const userDataToCache: any = {
                             id: is_existing_database_user._id,
                             email: is_existing_database_user.registered_user_email,
                             username: is_existing_database_user.registered_username,
+                            password: is_existing_database_user.registered_user_password,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
 
@@ -105,26 +118,30 @@ export const letting_user_login = async (request: Request, response: Response) =
                             `user:${registered_user_email}`,
                             JSON.stringify(userDataToCache),
                             {
-                                EX: 3600
+                                EX: 3600 
                             }
                         );
                     }
-
                 } catch (err) {
                     console.error('Error setting data in Redis:', err);
                 }
+            } else {
+                console.log('User not found in database');
+                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                    Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+                });
             }
         }
-        if (!is_existing_database_user) {
-            return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
-                Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
-            });
-        }
-        if ( is_existing_database_user) {
+
+        console.log("User data:", is_existing_database_user);
+        if (is_existing_database_user && cachedUserData) {
             const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
                 registered_user_password,
                 is_existing_database_user.password
             );
+
+            console.log('Password validation result:', is_password_valid);
+
             if (is_password_valid) {
                 const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
                 return response.status(HTTPS_STATUS_CODE.OK).json({
@@ -143,7 +160,35 @@ export const letting_user_login = async (request: Request, response: Response) =
                     Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
                 });
             }
-        } else {
+        }
+        else if (is_existing_database_user && !cachedUserData){
+            const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
+                registered_user_password,
+                is_existing_database_user.registered_user_password
+            );
+
+            console.log('Password validation result:', is_password_valid);
+
+            if (is_password_valid) {
+                const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
+                return response.status(HTTPS_STATUS_CODE.OK).json({
+                    success: true,
+                    message: [{
+                        SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+                        USER_ROLE: RolesSpecified.USER_DESC,
+                        AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
+                    }],
+                    userInfo: is_existing_database_user,
+                    token: token_for_authentication_generated
+                });
+            } else {
+                console.log('Invalid password');
+                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                    Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
+                });
+            }
+        }
+         else {
             console.log('Password field not found in user data');
         }
 

@@ -93,17 +93,26 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
         }
         let is_existing_database_user;
         if (cachedUserData) {
+            console.log('User data retrieved from Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         }
         else {
+            console.log('No cache found, fetching user data from database');
             is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+            console.log(is_existing_database_user);
             if (is_existing_database_user) {
                 try {
-                    if ('registered_user_email' in is_existing_database_user && 'registered_username' in is_existing_database_user && 'authorities_provided_by_role' in is_existing_database_user && '_id' in is_existing_database_user) {
+                    console.log('Caching user data in Redis');
+                    if ('registered_user_email' in is_existing_database_user &&
+                        'registered_user_password' in is_existing_database_user &&
+                        'registered_username' in is_existing_database_user &&
+                        'authorities_provided_by_role' in is_existing_database_user &&
+                        '_id' in is_existing_database_user) {
                         const userDataToCache = {
                             id: is_existing_database_user._id,
                             email: is_existing_database_user.registered_user_email,
                             username: is_existing_database_user.registered_username,
+                            password: is_existing_database_user.registered_user_password,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
                         yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache), {
@@ -115,14 +124,40 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                     console.error('Error setting data in Redis:', err);
                 }
             }
+            else {
+                console.log('User not found in database');
+                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
+                    Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
+                });
+            }
         }
-        if (!is_existing_database_user) {
-            return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
-                Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
-            });
-        }
-        if (is_existing_database_user) {
+        console.log("User data:", is_existing_database_user);
+        if (is_existing_database_user && cachedUserData) {
             const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.password);
+            console.log('Password validation result:', is_password_valid);
+            if (is_password_valid) {
+                const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
+                return response.status(http_status_codes_1.default.OK).json({
+                    success: true,
+                    message: [{
+                            SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                            USER_ROLE: structure_1.default.USER_DESC,
+                            AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
+                        }],
+                    userInfo: is_existing_database_user,
+                    token: token_for_authentication_generated
+                });
+            }
+            else {
+                console.log('Invalid password');
+                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
+                    Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
+                });
+            }
+        }
+        else if (is_existing_database_user && !cachedUserData) {
+            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.registered_user_password);
+            console.log('Password validation result:', is_password_valid);
             if (is_password_valid) {
                 const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
                 return response.status(http_status_codes_1.default.OK).json({
