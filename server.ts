@@ -27,7 +27,7 @@ loadEnvironmentVariables();
 connection_DB_estaiblished();
 
 const initializeRedisClient = async (): Promise<RedisClientType> => {
-    const redisUrl = process.env.REDIS_CONNECT;
+    const redisUrl = process.env.REDIS_CONNECTION;
 
     if (!redisUrl) {
         throw new Error('REDIS_CONNECT is not defined in the environment variables');
