@@ -91,7 +91,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
         level: 'info',
         msg: 'HTTP {{req.method}} {{req.url}}',
     }));
-    const corsOrigin = CORSValidator;
+    const corsOrigin = (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('https://')) || (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('http://'));
     httpServerApplication.use((0, cors_1.default)({
         origin: corsOrigin,
         methods: [structure_1.DefaultRequestMethods.GET, structure_1.DefaultRequestMethods.POST, structure_1.DefaultRequestMethods.DELETE, structure_1.DefaultRequestMethods.OPT, structure_1.DefaultRequestMethods.PUT],
