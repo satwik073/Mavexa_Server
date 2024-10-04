@@ -14,6 +14,8 @@ import distributedRedisSessionStore from 'connect-redis';
 import httpCookieProcessingMiddleware from 'cookie-parser';
 import cryptographicRandomBytesGenerator from 'crypto';
 import httpCrossOriginResourceSharingMiddleware from 'cors';
+import { DefaultRequestMethods } from './Common/structure';
+import { ADMIN_SUPPORT_CONFIGURATION, USER_SUPPORT_CONFIGURATION } from './Constants/RoutesDefined/RoutesFormed';
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -95,7 +97,7 @@ const initializeAndConfigureServerApplication = async () => {
     const corsOrigin = CORSValidator;
     httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
         origin: corsOrigin,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
         credentials: true,
     }));
 
@@ -114,8 +116,8 @@ const initializeAndConfigureServerApplication = async () => {
 
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
 
-    httpServerApplication.use('/api/v1/', userManagementRoutingController);
-    httpServerApplication.use('/api/v1/controls', adminPrivilegesRouteManagement);
+    httpServerApplication.use(USER_SUPPORT_CONFIGURATION.global_request, userManagementRoutingController);
+    httpServerApplication.use(ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminPrivilegesRouteManagement);
 
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };

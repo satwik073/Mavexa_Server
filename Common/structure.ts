@@ -19,6 +19,15 @@ export enum VariantsType {
     OTP_TRACES = 'otp'
 }
 
+export enum DefaultRequestMethods {
+    GET ='GET', 
+    POST='POST', 
+    PUT='PUT', 
+    DELETE ='DELETE', 
+    OPT ='OPTIONS',
+    PATCH = 'PATCH'
+}
+
 export interface UserDocument extends Document {
     registered_username : string;
     registered_user_email: string;
