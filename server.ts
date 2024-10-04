@@ -68,7 +68,7 @@ const server_configs = async () => {
     });
 };
 
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     if (clusterPremises.isMaster) {
         const numCPUs = operatingSystem.cpus().length;
         console.log(`Master process ${process.pid} is running`);
