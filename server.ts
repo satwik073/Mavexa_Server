@@ -25,20 +25,18 @@ const loadEnvironmentVariables = () => {
 
 loadEnvironmentVariables();
 connection_DB_estaiblished();
-
 const initializeRedisClient = async (): Promise<RedisClientType> => {
-    const redisClient = createClient({url: 'redis-cli -u redis://default: FuuTU5U9SPJCImOSijSfPsZKQwvbYnnU@redis-16693.c267.us-east-1-4.ec2.redns.redis-cloud.com:16693'})
-    redisClient.on('connect', () => {
-        console.log('Connected to Redis');
+    const redisUrl = process.env.REDIS_CONNECTION;
+
+    if (!redisUrl) {
+        throw new Error('REDIS_CONNECT is not defined in the environment variables');
+    }
+
+    const redisClient = createClient({
+        url: redisUrl
     });
 
-    redisClient.on('error', (err) => {
-        console.error('Redis error:', err);
-    });
 
-    await redisClient.connect();
-    return redisClient as RedisClientType<any>;
-};
 const server_configs = async () => {
     const app = express();
     const redisClient = await initializeRedisClient();
