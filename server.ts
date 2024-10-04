@@ -94,7 +94,7 @@ const initializeAndConfigureServerApplication = async () => {
         msg: 'HTTP {{req.method}} {{req.url}}',
     }));
 
-    const corsOrigin = CORSValidator;
+    const corsOrigin = CORSValidator?.startsWith('https://') || CORSValidator?.startsWith('http://');
     httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
         origin: corsOrigin,
         methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
@@ -111,14 +111,10 @@ const initializeAndConfigureServerApplication = async () => {
         req.redisClient = redisClusterConnection;
         next();
     });
-
     applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
-
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
-
     httpServerApplication.use(USER_SUPPORT_CONFIGURATION.global_request, userManagementRoutingController);
     httpServerApplication.use(ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminPrivilegesRouteManagement);
-
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
