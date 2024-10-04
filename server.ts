@@ -36,17 +36,6 @@ const initializeRedisClient = async (): Promise<RedisClientType> => {
         url: redisUrl
     });
 
-    redisClient.on('connect', () => {
-        console.log('Connected to Redis');
-    });
-
-    redisClient.on('error', (err) => {
-        console.error('Redis error:', err);
-    });
-
-    await redisClient.connect();
-    return redisClient as RedisClientType<any>;
-};
 
 const server_configs = async () => {
     const app = express();
