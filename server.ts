@@ -1,88 +1,138 @@
 require("./Common/instrument");
 import { Request, Response, NextFunction } from 'express';
-import user_controlling_routes from './Routes/user_routers/userRouter';
-import admin_controlling_routes from './Routes/admin_routes/adminRoutes';
-import connection_DB_estaiblished from './DB/DB/db_config';
-import path from 'path';
-import { RedisClientType, createClient } from 'redis'; 
+import userManagementRoutingController from './Routes/user_routers/userRouter';
+import adminPrivilegesRouteManagement from './Routes/admin_routes/adminRoutes';
+import databaseConnectionEstablishmentProcess from './DB/DB/db_config';
+import absolutePathModuleResolver from 'path';
+import RedisClusterClient from 'ioredis';
+import httpSecurityHeadersManager from 'helmet';
+import requestRateLimitingMiddleware from 'express-rate-limit';
+import structuredLoggingFramework from 'winston';
+import advancedLoggingMiddleware from 'express-winston';
+import sessionManagementController from 'express-session';
+import distributedRedisSessionStore from 'connect-redis';
+import httpCookieProcessingMiddleware from 'cookie-parser';
+import cryptographicRandomBytesGenerator from 'crypto';
+import httpCrossOriginResourceSharingMiddleware from 'cors';
+const operatingSystemModule = require('os');
+const multiProcessClusterManager = require('cluster');
+const applicationPerformanceMonitoring = require("@sentry/node");
+const expressServerFramework = require('express');
+const httpRequestBodyParsingLibrary = require('body-parser');
+const environmentVariableManager = require('dotenv');
+const dataCompressionMiddleware = require('compression');
 
-const operatingSystem = require('os');
-const clusterPremises = require('cluster');
-const Sentry = require("@sentry/node");
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const compression = require('compression');
-
-const loadEnvironmentVariables = () => {
-    const envFile = process.env.VERCEL_ENV === 'production' 
-        ? './.env.production' 
-        : './.env.staging';
-    dotenv.config({ path: path.resolve(__dirname, envFile) });
-    console.log(`Loaded environment from ${envFile}`);
-};
-
-loadEnvironmentVariables();
-connection_DB_estaiblished();
-
-const initializeRedisClient = async (): Promise<RedisClientType> => {
-    const redisUrl = process.env.REDIS_CONNECTION;
-    if (!redisUrl) {
-        throw new Error('REDIS_CONNECT is not defined in the environment variables');
+const loadEnvironmentVariablesFromConfigFile = () => {
+    try {
+        const activeEnvironmentConfigFile = process.env.VERCEL_ENV === 'production' ? './.env.production' : './.env.staging';
+        environmentVariableManager.config({ path: absolutePathModuleResolver.resolve(__dirname, activeEnvironmentConfigFile) });
+        console.info(`✅ Environment loaded from: ${activeEnvironmentConfigFile}`);
+        return activeEnvironmentConfigFile === './.env.staging' 
+        ? process.env.PRODUCTION_INSTANCE_STAGING
+        : process.env.PRODUCTION_INSTANCE_PROD;
+    } catch (error : any) {
+        console.error(`❌ Error loading environment variables: ${error.message}`);
+        return process.env.PRODUCTION_INSTANCE_STAGING
     }
-
-    const redisClient = createClient({
-        url: redisUrl
-    });
-
-    redisClient.on('connect', () => {
-        console.log('Connected to Redis');
-    });
-
-    redisClient.on('error', (err) => {
-        console.error('Redis error:', err);
-    });
-
-    await redisClient.connect();
-    return redisClient as RedisClientType<any>;
 };
 
-const server_configs = async () => {
-    const app = express();
-    const redisClient = await initializeRedisClient();
-    app.use(compression());
-    app.use(bodyParser.json());
-    app.use(cors());
-    app.use((req: Request, res: Response, next: NextFunction) => {
-        req.redisClient = redisClient;
+loadEnvironmentVariablesFromConfigFile();
+databaseConnectionEstablishmentProcess();
+
+const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
+
+interface CustomRequest extends Request {
+    redisClient: RedisClusterClient.Redis;
+}
+const generateCryptographicSessionSecret = () => cryptographicRandomBytesGenerator.randomBytes(32).toString('hex');
+
+const sessionManagementMiddleware = sessionManagementController({
+    store: new distributedRedisSessionStore({ client: redisClusterConnection }),
+    secret: generateCryptographicSessionSecret(),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'strict',
+        maxAge: 1000 * 60 * 15,
+    }
+});
+
+const globalRequestRateLimiter = requestRateLimitingMiddleware({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: "❌ Too many requests from this IP address. Please try again later." }
+});
+
+const initializeStructuredLoggingSystem = () => {
+    const systemLogger = structuredLoggingFramework.createLogger({
+        level: 'info',
+        format: structuredLoggingFramework.format.combine(
+            structuredLoggingFramework.format.timestamp(),
+            structuredLoggingFramework.format.json()
+        ),
+        transports: [
+            new structuredLoggingFramework.transports.Console(),
+            new structuredLoggingFramework.transports.File({ filename: 'system-logs.log' })
+        ],
+    });
+
+    return systemLogger;
+};
+
+const initializeAndConfigureServerApplication = async () => {
+    const httpServerApplication = expressServerFramework();
+    const systemLoggerInstance = initializeStructuredLoggingSystem();
+    const CORSValidator = loadEnvironmentVariablesFromConfigFile();
+
+    httpServerApplication.use(advancedLoggingMiddleware.logger({
+        winstonInstance: systemLoggerInstance,
+        level: 'info',
+        msg: 'HTTP {{req.method}} {{req.url}}',
+    }));
+
+    const corsOrigin = CORSValidator;
+    httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
+        origin: corsOrigin,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        credentials: true,
+    }));
+
+    httpServerApplication.use(httpSecurityHeadersManager());
+    httpServerApplication.use(dataCompressionMiddleware());
+    httpServerApplication.use(httpRequestBodyParsingLibrary.json({ limit: '10kb' }));
+    httpServerApplication.use(httpCookieProcessingMiddleware());
+    httpServerApplication.use(globalRequestRateLimiter);
+    httpServerApplication.use(sessionManagementMiddleware);
+    httpServerApplication.use((req: CustomRequest, res: Response, next: NextFunction) => {
+        req.redisClient = redisClusterConnection;
         next();
     });
-    Sentry.init({ dsn: process.env.SENTRY_DSN });
 
-    const PORT_ESTAIBLISHED = process.env.PORT_ESTAIBLISHED || 8000;
-    app.use('/api/v1/', user_controlling_routes);
-    app.use('/api/v1/controls', admin_controlling_routes);
-    app.listen(PORT_ESTAIBLISHED, () => {
-        console.log(`Server running successfully on port ${PORT_ESTAIBLISHED}`);
-    });
+    applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
+
+    const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
+
+    httpServerApplication.use('/api/v1/', userManagementRoutingController);
+    httpServerApplication.use('/api/v1/controls', adminPrivilegesRouteManagement);
+
+    httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
-if (!process.env.VERCEL_ENV) {
-    if (clusterPremises.isPrimary) {  
-        const numCPUs = operatingSystem.cpus().length;
-        console.log(`Primary process ${process.pid} is running`);
-        console.log(`Forking server for ${numCPUs} CPUs`);
-        for (let i = 0; i < numCPUs; i++) {
-            clusterPremises.fork();
-        }
-        clusterPremises.on('exit', (worker: { process: { pid: any; }; }) => {
-            console.log(`Worker ${worker.process.pid} died. Starting a new worker...`);
-            clusterPremises.fork();
+if (process.env.VERCEL_ENV) {
+    initializeAndConfigureServerApplication();
+} else {
+    if (multiProcessClusterManager.isPrimary) {
+        const cpuCoreCount = operatingSystemModule.cpus().length;
+        console.info(`✅ Primary process ${process.pid} is running. Forking ${cpuCoreCount} worker processes.`);
+        for (let i = 0; i < cpuCoreCount; i++) multiProcessClusterManager.fork();
+
+        multiProcessClusterManager.on('exit', (workerProcess: any) => {
+            console.warn(`👷 Worker process ${workerProcess.process.pid} exited unexpectedly. Forking a new worker process.`);
+            multiProcessClusterManager.fork();
         });
     } else {
-        server_configs(); 
+        initializeAndConfigureServerApplication();
     }
-} else {
-    server_configs();
 }
