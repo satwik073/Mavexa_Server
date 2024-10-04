@@ -69,9 +69,9 @@ const server_configs = async () => {
 };
 
 if (!process.env.VERCEL_ENV) {
-    if (clusterPremises.isMaster) {
+    if (clusterPremises.isPrimary) {  
         const numCPUs = operatingSystem.cpus().length;
-        console.log(`Master process ${process.pid} is running`);
+        console.log(`Primary process ${process.pid} is running`);
         console.log(`Forking server for ${numCPUs} CPUs`);
         for (let i = 0; i < numCPUs; i++) {
             clusterPremises.fork();
