@@ -27,6 +27,8 @@ const connect_redis_1 = __importDefault(require("connect-redis"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const crypto_1 = __importDefault(require("crypto"));
 const cors_1 = __importDefault(require("cors"));
+const structure_1 = require("./Common/structure");
+const RoutesFormed_1 = require("./Constants/RoutesDefined/RoutesFormed");
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -92,7 +94,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     const corsOrigin = CORSValidator;
     httpServerApplication.use((0, cors_1.default)({
         origin: corsOrigin,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: [structure_1.DefaultRequestMethods.GET, structure_1.DefaultRequestMethods.POST, structure_1.DefaultRequestMethods.DELETE, structure_1.DefaultRequestMethods.OPT, structure_1.DefaultRequestMethods.PUT],
         credentials: true,
     }));
     httpServerApplication.use((0, helmet_1.default)());
@@ -107,8 +109,8 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     });
     applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
-    httpServerApplication.use('/api/v1/', userRouter_1.default);
-    httpServerApplication.use('/api/v1/controls', adminRoutes_1.default);
+    httpServerApplication.use(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.global_request, userRouter_1.default);
+    httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });
 if (process.env.VERCEL_ENV) {

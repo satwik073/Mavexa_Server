@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailResponseControllingError = exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
+exports.EmailResponseControllingError = exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.DefaultRequestMethods = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
 var RolesSpecified;
 (function (RolesSpecified) {
     RolesSpecified["ADMIN_DESC"] = "admin";
@@ -24,6 +24,15 @@ var VariantsType;
     VariantsType["TEXT"] = "text";
     VariantsType["OTP_TRACES"] = "otp";
 })(VariantsType || (exports.VariantsType = VariantsType = {}));
+var DefaultRequestMethods;
+(function (DefaultRequestMethods) {
+    DefaultRequestMethods["GET"] = "GET";
+    DefaultRequestMethods["POST"] = "POST";
+    DefaultRequestMethods["PUT"] = "PUT";
+    DefaultRequestMethods["DELETE"] = "DELETE";
+    DefaultRequestMethods["OPT"] = "OPTIONS";
+    DefaultRequestMethods["PATCH"] = "PATCH";
+})(DefaultRequestMethods || (exports.DefaultRequestMethods = DefaultRequestMethods = {}));
 class SuccessManager {
     constructor(message_displayed) {
         this.message_displayed = 'DatabaseConnectionTrace';
