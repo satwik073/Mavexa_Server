@@ -11,8 +11,8 @@ import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
-import { createClient } from "redis";
-import connection_DB_estaiblished from "../../DB/DB/db_config";
+import { RedisClient } from "ioredis/built/connectors/SentinelConnector/types";
+
 
 
 
@@ -117,10 +117,10 @@ export const letting_user_login = async (request: Request, response: Response) =
                         await request?.redisClient?.set(
                             `user:${registered_user_email}`,
                             JSON.stringify(userDataToCache),
-                            {
-                                EX: 3600 
-                            }
+                            'EX',
+                            3600 // Expiration time in seconds
                         );
+                        
                     }
                 } catch (err) {
                     console.error('Error setting data in Redis:', err);
