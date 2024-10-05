@@ -2,9 +2,9 @@ require("./Common/instrument");
 import { Request, Response, NextFunction } from 'express';
 import userManagementRoutingController from './Routes/user_routers/userRouter';
 import adminPrivilegesRouteManagement from './Routes/admin_routes/adminRoutes';
-import databaseConnectionEstablishmentProcess from './DB/DB/db_config';
+import databaseConnectionEstablishmentProcess from './Database/MongoDB/db_config'
 import absolutePathModuleResolver from 'path';
-import RedisClusterClient from 'ioredis';
+import { Redis } from 'ioredis';
 import httpSecurityHeadersManager from 'helmet';
 import requestRateLimitingMiddleware from 'express-rate-limit';
 import structuredLoggingFramework from 'winston';
@@ -24,6 +24,7 @@ const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
 const dataCompressionMiddleware = require('compression');
 
+
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {
         const activeEnvironmentConfigFile = process.env.VERCEL_ENV === 'production' ? './.env.production' : './.env.staging';
@@ -41,7 +42,9 @@ const loadEnvironmentVariablesFromConfigFile = () => {
 loadEnvironmentVariablesFromConfigFile();
 databaseConnectionEstablishmentProcess();
 
-const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
+// const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
+const redisConnectionString = process.env.REDIS_CONNECTION || 'redis://localhost:6379';
+const redisClusterConnection = new Redis(redisConnectionString);
 
 interface CustomRequest extends Request {
     redisClient: RedisClusterClient.Redis;
@@ -118,7 +121,7 @@ const initializeAndConfigureServerApplication = async () => {
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {

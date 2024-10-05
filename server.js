@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("./Common/instrument");
 const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
-const db_config_1 = __importDefault(require("./DB/DB/db_config"));
+const db_config_1 = __importDefault(require("./Database/MongoDB/db_config"));
 const path_1 = __importDefault(require("path"));
-const ioredis_1 = __importDefault(require("ioredis"));
+const ioredis_1 = require("ioredis");
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const winston_1 = __importDefault(require("winston"));
@@ -52,7 +52,9 @@ const loadEnvironmentVariablesFromConfigFile = () => {
 };
 loadEnvironmentVariablesFromConfigFile();
 (0, db_config_1.default)();
-const redisClusterConnection = new ioredis_1.default(process.env.REDIS_CONNECTION || '');
+// const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
+const redisConnectionString = process.env.REDIS_CONNECTION || 'redis://localhost:6379';
+const redisClusterConnection = new ioredis_1.Redis(redisConnectionString);
 const generateCryptographicSessionSecret = () => crypto_1.default.randomBytes(32).toString('hex');
 const sessionManagementMiddleware = (0, express_session_1.default)({
     store: new connect_redis_1.default({ client: redisClusterConnection }),
@@ -113,7 +115,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 }
 else {
