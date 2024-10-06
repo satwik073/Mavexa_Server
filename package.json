@@ -55,7 +55,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
     "redis": "^4.7.0",
-    "styled-components": "^6.1.13"
+    "styled-components": "^6.1.13",
+    "winston": "^3.15.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
