@@ -29,6 +29,7 @@ export enum DefaultRequestMethods {
 }
 
 export interface UserDocument extends Document {
+    is_user_verified: any;
     registered_username : string;
     registered_user_email: string;
     registered_user_password: string;
