@@ -126,7 +126,7 @@ const initializeAndConfigureServerApplication = async () => {
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {
