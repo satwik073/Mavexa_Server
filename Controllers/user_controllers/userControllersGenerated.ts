@@ -111,6 +111,7 @@ export const letting_user_login = async (request: Request, response: Response) =
                             email: is_existing_database_user.registered_user_email,
                             username: is_existing_database_user.registered_username,
                             password: is_existing_database_user.registered_user_password,
+                            verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
 

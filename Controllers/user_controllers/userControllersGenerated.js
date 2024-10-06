@@ -113,6 +113,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                             email: is_existing_database_user.registered_user_email,
                             username: is_existing_database_user.registered_username,
                             password: is_existing_database_user.registered_user_password,
+                            verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
                         yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache)));
