@@ -114,11 +114,12 @@ export const letting_user_login = async (request: Request, response: Response) =
                             verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
-
                         await request?.redisClient?.set(
                             `user:${registered_user_email}`,
                             JSON.stringify(userDataToCache),
-                            
+                            {
+                                EX: 3600,
+                            }
                         );
                         
                     }
