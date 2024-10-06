@@ -17,7 +17,6 @@ const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter")
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./Database/MongoDB/db_config"));
 const path_1 = __importDefault(require("path"));
-const ioredis_1 = require("ioredis");
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const winston_1 = __importDefault(require("winston"));
@@ -29,6 +28,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const cors_1 = __importDefault(require("cors"));
 const structure_1 = require("./Common/structure");
 const RoutesFormed_1 = require("./Constants/RoutesDefined/RoutesFormed");
+const RedisConfigurations_1 = require("./Database/RedisCacheDB/RedisConfigurations");
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -52,12 +52,17 @@ const loadEnvironmentVariablesFromConfigFile = () => {
 };
 loadEnvironmentVariablesFromConfigFile();
 (0, db_config_1.default)();
-// const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
-const redisConnectionString = process.env.REDIS_CONNECTION || 'redis://localhost:6379';
-const redisClusterConnection = new ioredis_1.Redis(redisConnectionString);
+RedisConfigurations_1.redisClusterConnection.ping((error_value, result) => {
+    if (error_value) {
+        console.error('Error connecting to Redis:', error_value);
+    }
+    else {
+        console.log('Connected to Redis:', result);
+    }
+});
 const generateCryptographicSessionSecret = () => crypto_1.default.randomBytes(32).toString('hex');
 const sessionManagementMiddleware = (0, express_session_1.default)({
-    store: new connect_redis_1.default({ client: redisClusterConnection }),
+    store: new connect_redis_1.default({ client: RedisConfigurations_1.redisClusterConnection }),
     secret: generateCryptographicSessionSecret(),
     resave: false,
     saveUninitialized: false,
@@ -106,7 +111,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     httpServerApplication.use(globalRequestRateLimiter);
     httpServerApplication.use(sessionManagementMiddleware);
     httpServerApplication.use((req, res, next) => {
-        req.redisClient = redisClusterConnection;
+        req.redisClient = RedisConfigurations_1.redisClusterConnection;
         next();
     });
     applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
@@ -115,7 +120,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });
-if (!process.env.VERCEL_ENV) {
+if (process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 }
 else {

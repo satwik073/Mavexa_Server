@@ -16,6 +16,7 @@ import cryptographicRandomBytesGenerator from 'crypto';
 import httpCrossOriginResourceSharingMiddleware from 'cors';
 import { DefaultRequestMethods } from './Common/structure';
 import { ADMIN_SUPPORT_CONFIGURATION, USER_SUPPORT_CONFIGURATION } from './Constants/RoutesDefined/RoutesFormed';
+import { redisClusterConnection } from './Database/RedisCacheDB/RedisConfigurations';
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -42,12 +43,16 @@ const loadEnvironmentVariablesFromConfigFile = () => {
 loadEnvironmentVariablesFromConfigFile();
 databaseConnectionEstablishmentProcess();
 
-// const redisClusterConnection = new RedisClusterClient(process.env.REDIS_CONNECTION || '');
-const redisConnectionString = process.env.REDIS_CONNECTION || 'redis://localhost:6379';
-const redisClusterConnection = new Redis(redisConnectionString);
+redisClusterConnection.ping((error_value : any, result: any) => {
+    if (error_value) {
+        console.error('Error connecting to Redis:', error_value);
+    } else {
+        console.log('Connected to Redis:', result);
+    }
+});
 
 interface CustomRequest extends Request {
-    redisClient: RedisClusterClient.Redis;
+    redisClient: typeof redisClusterConnection
 }
 const generateCryptographicSessionSecret = () => cryptographicRandomBytesGenerator.randomBytes(32).toString('hex');
 
@@ -121,7 +126,7 @@ const initializeAndConfigureServerApplication = async () => {
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
-if (!process.env.VERCEL_ENV) {
+if (process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {

@@ -117,8 +117,7 @@ export const letting_user_login = async (request: Request, response: Response) =
                         await request?.redisClient?.set(
                             `user:${registered_user_email}`,
                             JSON.stringify(userDataToCache),
-                            'EX',
-                            3600 // Expiration time in seconds
+                            
                         );
                         
                     }
