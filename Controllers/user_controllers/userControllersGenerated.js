@@ -115,8 +115,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                             password: is_existing_database_user.registered_user_password,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
-                        yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache), 'EX', 3600 // Expiration time in seconds
-                        ));
+                        yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache)));
                     }
                 }
                 catch (err) {
