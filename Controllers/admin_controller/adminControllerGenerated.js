@@ -100,6 +100,7 @@ exports.authorized_admin_login = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_E
 const get_all_registered_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const collecting_total_data = yield UserRegisteringModal_1.default.find();
+        console.log(collecting_total_data);
         return response.status(200).json({
             success: true,
             message: "all users data fetched successfully",

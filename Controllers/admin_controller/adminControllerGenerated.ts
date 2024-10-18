@@ -79,6 +79,7 @@ export const authorized_admin_login = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (re
 export const get_all_registered_user_profile = async (request: Request, response: Response) => {
     try {
         const collecting_total_data = await user_detailed_description.find();
+        console.log(collecting_total_data)
         return response.status(200).json({
             success: true,
             message: "all users data fetched successfully",

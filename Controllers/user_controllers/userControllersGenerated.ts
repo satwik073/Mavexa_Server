@@ -1,17 +1,13 @@
-import { Request, Response } from "express";
-import user_detailed_description from "../../Model/user_model/UserRegisteringModal";
-const jwt = require('jsonwebtoken')
+import { Request, response, Response } from "express";
 const bcrypt = require('bcryptjs');
-import redis from 'redis';
-import { promisify } from 'util';
 import { email_service_enabled } from "../../Services/EmailServices";
-import { EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DATA_OBJECT } from "../../Middlewares/Error/ErrorHandlerReducer";
+import { ASYNC_ERROR_HANDLER_ESTAIBLISHED, EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DATA_OBJECT } from "../../Middlewares/Error/ErrorHandlerReducer";
 import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
 import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
-import { RedisClient } from "ioredis/built/connectors/SentinelConnector/types";
+import { redisClusterConnection } from "../../Database/RedisCacheDB/RedisConfigurations";
 
 
 
@@ -33,6 +29,66 @@ interface UserVerificationMethod {
     otp_for_verification: string
 }
 
+// Example usage
+// const deleteCache = async () => {
+//     try {
+//         const result = await request?.redisClient?.del(`user:${registered_user_email}`);
+//         console.log(`Deleted ${result} key(s) from cache`);
+//     } catch (err) {
+//         console.error('Error deleting key:', err);
+//     }
+// };
+// deleteCache()
+export const UserRegistrationProcess = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
+    const { registered_username, registered_user_email, registered_user_password } = request.body;
+    const missingFields = MISSING_FIELDS_VALIDATOR(
+        { registered_user_email, registered_user_password },
+        response,
+        AuthTypeDeclared.USER_REGISTRATION
+    );
+    if (missingFields) return missingFields;
+
+    await EXISTING_USER_FOUND_IN_DATABASE(registered_user_email, AuthTypeDeclared.USER_REGISTRATION, RolesSpecified.USER_DESC);
+    const otpCaptured = OTP_GENERATOR_CALLED(registered_user_email);
+    const manipulatedPasscode = SECURING_PASSCODE(registered_user_password);
+
+    const {
+        recognized_user: userRegistrationData,
+        token_for_authentication_generated: tokenFetched
+    } = await TRACKING_DATA_OBJECT(
+        {
+            registered_user_email,
+            registered_username,
+            registered_user_password: manipulatedPasscode,
+            otp_for_verification: otpCaptured
+        },
+        RolesSpecified.USER_DESC
+    );
+
+    const cacheKey = `user:${userRegistrationData.id}`;
+    try {
+        await setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, userRegistrationData , 3600);
+    } catch (redisError) {
+        console.error('Failed to store user registration data in Redis:', redisError);
+    }
+
+    return response.status(HTTPS_STATUS_CODE.OK).json({
+        success: true,
+        message: [
+            {
+                SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(
+                    AuthTypeDeclared.USER_REGISTRATION,
+                    RolesSpecified.USER_DESC
+                ).SUCCESS_MESSAGE,
+                USER_ROLE: RolesSpecified.USER_DESC,
+                AUTH_TYPE: AuthTypeDeclared.USER_REGISTRATION
+            },
+        ],
+        userInfo: userRegistrationData,
+        token: tokenFetched
+    });
+});
+
 export const letting_user_registered = async (request: Request<{}, {}, UserRegisterRequest>, response: Response) => {
     try {
 
@@ -44,7 +100,13 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         const hashed_password_generated = await SECURING_PASSCODE(registered_user_password);
 
         const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, RolesSpecified.USER_DESC);
-
+        console.log(new_registered_user_defined.id)
+        const cacheKey = `user:${new_registered_user_defined.id}`;
+    try {
+        setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, new_registered_user_defined , 3600);
+    } catch (redisError) {
+        console.error('Failed to store user registration data in Redis:', redisError);
+    }
         return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
             message: [
@@ -68,7 +130,12 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
 }
 export const letting_user_login = async (request: Request, response: Response) => {
     try {
+        console.log(typeof redisClusterConnection.pipeline); // Should return 'function'
+
         const { registered_user_email, registered_user_password } = request.body;
+
+
+
         let cachedUserData;
         const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR(
             { registered_user_email, registered_user_password },
@@ -96,6 +163,7 @@ export const letting_user_login = async (request: Request, response: Response) =
             );
             console.log(is_existing_database_user)
 
+
             if (is_existing_database_user) {
                 try {
                     console.log('Caching user data in Redis');
@@ -114,14 +182,19 @@ export const letting_user_login = async (request: Request, response: Response) =
                             verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
+
                         await request?.redisClient?.set(
                             `user:${registered_user_email}`,
                             JSON.stringify(userDataToCache),
-                            {
-                                EX: 3600,
-                            }
+                            'EX', // Specify expiration option directly
+                            3600   // TTL set to 1 hour (3600 seconds)
                         );
-                        
+
+
+
+
+
+
                     }
                 } catch (err) {
                     console.error('Error setting data in Redis:', err);
@@ -162,7 +235,7 @@ export const letting_user_login = async (request: Request, response: Response) =
                 });
             }
         }
-        else if (is_existing_database_user && !cachedUserData){
+        else if (is_existing_database_user && !cachedUserData) {
             const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
                 registered_user_password,
                 is_existing_database_user.registered_user_password
@@ -189,7 +262,7 @@ export const letting_user_login = async (request: Request, response: Response) =
                 });
             }
         }
-         else {
+        else {
             console.log('Password field not found in user data');
         }
 
@@ -337,3 +410,7 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
         });
     }
 };
+function setCacheWithAdvancedTTLHandlingAndPipelining(arg0: string, userDataToCache: any, arg2: number) {
+    throw new Error("Function not implemented.");
+}
+
