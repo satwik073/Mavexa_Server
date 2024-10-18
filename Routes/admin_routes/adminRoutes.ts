@@ -8,6 +8,6 @@ const router = Router()
 
 router.post(ADMIN_SUPPORT_CONFIGURATION.admin_registration_initialised, authorized_admin_account)
 router.post(ADMIN_SUPPORT_CONFIGURATION.admin_login_initailised , authorized_admin_login)
-router.get(ADMIN_SUPPORT_CONFIGURATION.admin_access_users , is_authenticated_user ,get_all_registered_user_profile )
+router.get(ADMIN_SUPPORT_CONFIGURATION.admin_access_users , get_all_registered_user_profile )
 
 export default router
