@@ -120,7 +120,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });
-if (!process.env.VERCEL_ENV) {
+if (process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 }
 else {
