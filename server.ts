@@ -23,8 +23,7 @@ const applicationPerformanceMonitoring = require("@sentry/node");
 const expressServerFramework = require('express');
 const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
-const dataCompressionMiddleware = require('compression');
-
+const dataCompressionMiddleware = require('compression')
 
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {
@@ -108,7 +107,8 @@ const initializeAndConfigureServerApplication = async () => {
         methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
         credentials: true,
     }));
-
+    
+    httpServerApplication.use(require('prerender-node').set('prerenderToken', process.env.PRERENDER_CONFIG_TOKEN));
     httpServerApplication.use(httpSecurityHeadersManager());
     httpServerApplication.use(dataCompressionMiddleware());
     httpServerApplication.use(httpRequestBodyParsingLibrary.json({ limit: '10kb' }));
