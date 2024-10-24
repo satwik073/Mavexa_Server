@@ -30,8 +30,10 @@ Sentry.init({
     dsn: process.env.SENTRY_DSN,
     debug: true,
     tracesSampleRate: 1.0,
+    integrations: (integrations) => {
+        return integrations.filter(integration => integration.name !== 'OpenTelemetry');
+    }
 });
-
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {
         const activeEnvironmentConfigFile = process.env.VERCEL_ENV === 'production' ? './.env.production' : './.env.staging';
