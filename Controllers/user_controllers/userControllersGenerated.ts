@@ -373,14 +373,14 @@ export const reset_password_for_verified_user = async (request: AuthenticatedReq
 }
 export const get_user_profile = async (request: AuthenticatedRequest, response: Response) => {
     try {
-
+        console.log(request.user?.registered_user_email)
         let cachedUserData;
         try {
-            cachedUserData = await request?.redisClient?.get(`user:${request.user?.registered_user_email}`);
+            cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
         } catch (err) {
             console.error('Error fetching data from Redis:', err);
         }
-
+        console.log("this",cachedUserData)
         if (cachedUserData) {
             console.log('User data retrieved from Redis cache');
             return response.status(HTTPS_STATUS_CODE.OK).json({
@@ -390,6 +390,7 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
             });
         }
         const fetched_loggedin_user = request.user;
+        console.log("hello",fetched_loggedin_user)
         if (!fetched_loggedin_user) {
             throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
         }

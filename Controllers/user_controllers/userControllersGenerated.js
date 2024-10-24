@@ -345,13 +345,15 @@ exports.reset_password_for_verified_user = reset_password_for_verified_user;
 const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
+        console.log((_a = request.user) === null || _a === void 0 ? void 0 : _a.registered_user_email);
         let cachedUserData;
         try {
-            cachedUserData = yield ((_a = request === null || request === void 0 ? void 0 : request.redisClient) === null || _a === void 0 ? void 0 : _a.get(`user:${(_b = request.user) === null || _b === void 0 ? void 0 : _b.registered_user_email}`));
+            cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${(_b = request.user) === null || _b === void 0 ? void 0 : _b.registered_user_email}`);
         }
         catch (err) {
             console.error('Error fetching data from Redis:', err);
         }
+        console.log("this", cachedUserData);
         if (cachedUserData) {
             console.log('User data retrieved from Redis cache');
             return response.status(http_status_codes_1.default.OK).json({
@@ -361,6 +363,7 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
             });
         }
         const fetched_loggedin_user = request.user;
+        console.log("hello", fetched_loggedin_user);
         if (!fetched_loggedin_user) {
             throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
         }
