@@ -130,7 +130,6 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
 });
 exports.letting_user_registered = letting_user_registered;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
     try {
         console.log(typeof RedisConfigurations_1.redisClusterConnection.pipeline); // Should return 'function'
         const { registered_user_email, registered_user_password } = request.body;
@@ -139,7 +138,7 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
         if (is_exists_missing_fields)
             return is_exists_missing_fields;
         try {
-            cachedUserData = yield ((_a = request === null || request === void 0 ? void 0 : request.redisClient) === null || _a === void 0 ? void 0 : _a.get(`user:${registered_user_email}`));
+            cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${registered_user_email}`);
         }
         catch (err) {
             console.error('Error fetching data from Redis:', err);
@@ -169,9 +168,14 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
                             verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
-                        yield ((_b = request === null || request === void 0 ? void 0 : request.redisClient) === null || _b === void 0 ? void 0 : _b.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache), 'EX', // Specify expiration option directly
-                        3600 // TTL set to 1 hour (3600 seconds)
-                        ));
+                        if (RedisConfigurations_1.redisClusterConnection) {
+                            console.log('Redis connection is not initialized.');
+                        }
+                        yield RedisConfigurations_1.redisClusterConnection.set(`user:${registered_user_email}`, // Cache key
+                        JSON.stringify(userDataToCache), // Serialized user data
+                        'EX', // Expiration option
+                        3600 // TTL in seconds (1 hour)
+                        );
                     }
                 }
                 catch (err) {

@@ -144,7 +144,7 @@ export const letting_user_login = async (request: Request, response: Response) =
         );
         if (is_exists_missing_fields) return is_exists_missing_fields;
         try {
-            cachedUserData = await request?.redisClient?.get(`user:${registered_user_email}`);
+            cachedUserData = await redisClusterConnection.get(`user:${registered_user_email}`);
         } catch (err) {
             console.error('Error fetching data from Redis:', err);
         }
@@ -182,16 +182,16 @@ export const letting_user_login = async (request: Request, response: Response) =
                             verified: is_existing_database_user.is_user_verified,
                             role: is_existing_database_user.authorities_provided_by_role,
                         };
-
-                        await request?.redisClient?.set(
-                            `user:${registered_user_email}`,
-                            JSON.stringify(userDataToCache),
-                            'EX', // Specify expiration option directly
-                            3600   // TTL set to 1 hour (3600 seconds)
+                        if (redisClusterConnection) {
+                            console.log('Redis connection is not initialized.');
+                        }
+                        await redisClusterConnection.set(
+                            `user:${registered_user_email}`,   // Cache key
+                            JSON.stringify(userDataToCache),   // Serialized user data
+                            'EX',                              // Expiration option
+                            3600                               // TTL in seconds (1 hour)
                         );
-
-
-
+                        
 
 
 

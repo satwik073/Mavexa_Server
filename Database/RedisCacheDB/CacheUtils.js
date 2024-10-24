@@ -38,21 +38,37 @@ const retrieveCachedDataWithPerformanceMetricsAndSafety = (cacheKeyIdentifierStr
     }
 });
 exports.retrieveCachedDataWithPerformanceMetricsAndSafety = retrieveCachedDataWithPerformanceMetricsAndSafety;
-const setCacheWithAdvancedTTLHandlingAndPipelining = (cacheKeyIdentifierString, cacheValueObjectToStore, cacheTimeToLiveInSeconds) => __awaiter(void 0, void 0, void 0, function* () {
+const setCacheWithAdvancedTTLHandlingAndPipelining = (cacheKeyIdentifierString, // Cache key
+cacheValueObjectToStore, // Value to cache (object)
+cacheTimeToLiveInSeconds // TTL in seconds (optional)
+) => __awaiter(void 0, void 0, void 0, function* () {
     const cacheSetOperationStartTimestamp = Date.now();
     try {
+        // Step 1: Serialize the object into a string (JSON)
         const serializedCacheValueString = JSON.stringify(cacheValueObjectToStore);
+        // Step 2: Ensure Redis connection is ready
+        if (!RedisConfigurations_1.redisClusterConnection || RedisConfigurations_1.redisClusterConnection.status !== 'ready') {
+            console.error('Redis connection is not initialized or ready.');
+            yield RedisConfigurations_1.redisClusterConnection.connect(); // Manually trigger connection if needed
+        }
+        // Step 3: Use Redis pipeline or direct `set` depending on preference
         const pipelineInstanceForSettingCacheData = RedisConfigurations_1.redisClusterConnection.pipeline();
+        // If TTL is provided, set with expiration; otherwise, set without expiration
         if (cacheTimeToLiveInSeconds) {
+            // Using expiration 'EX' and TTL (in seconds)
             pipelineInstanceForSettingCacheData.set(cacheKeyIdentifierString, serializedCacheValueString, 'EX', cacheTimeToLiveInSeconds);
         }
         else {
+            // Set without expiration
             pipelineInstanceForSettingCacheData.set(cacheKeyIdentifierString, serializedCacheValueString);
         }
+        // Step 4: Execute the pipeline (or direct set)
         yield pipelineInstanceForSettingCacheData.exec();
+        console.log(`Cache set for key "${cacheKeyIdentifierString}" successfully.`);
     }
     catch (error) {
-        console.error(`An error occurred while attempting to set cache for key: ${cacheKeyIdentifierString}`, error);
+        console.error(`An error occurred while setting cache for key: ${cacheKeyIdentifierString}`, error);
+        throw error; // Re-throw the error to handle it higher up the call stack
     }
     finally {
         const cacheSetOperationEndTimestamp = Date.now();

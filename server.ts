@@ -1,4 +1,5 @@
-require("./Common/instrument");
+require('./Common/instrument')
+import * as Sentry from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
 import userManagementRoutingController from './Routes/user_routers/userRouter';
 import adminPrivilegesRouteManagement from './Routes/admin_routes/adminRoutes';
@@ -24,6 +25,12 @@ const expressServerFramework = require('express');
 const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
 const dataCompressionMiddleware = require('compression')
+
+Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    debug: true,
+    tracesSampleRate: 1.0,
+});
 
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {
@@ -126,7 +133,8 @@ const initializeAndConfigureServerApplication = async () => {
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 };
 
-if (process.env.VERCEL_ENV) {
+
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {
