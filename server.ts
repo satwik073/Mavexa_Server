@@ -1,5 +1,4 @@
 require('./Common/instrument')
-import * as Sentry from '@sentry/node';
 import { Request, Response, NextFunction } from 'express';
 import userManagementRoutingController from './Routes/user_routers/userRouter';
 import adminPrivilegesRouteManagement from './Routes/admin_routes/adminRoutes';
@@ -25,15 +24,22 @@ const expressServerFramework = require('express');
 const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
 const dataCompressionMiddleware = require('compression')
+const Sentry = require("@sentry/node");
+const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+import * as SentryUpdates from "@sentry/browser";
 
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    debug: true,
+    integrations: [
+      nodeProfilingIntegration(),
+        SentryUpdates.replayIntegration(),
+    ],
     tracesSampleRate: 1.0,
-    integrations: (integrations) => {
-        return integrations.filter(integration => integration.name !== 'OpenTelemetry');
-    }
-});
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+})
+
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {
         const activeEnvironmentConfigFile = process.env.VERCEL_ENV === 'production' ? './.env.production' : './.env.staging';
@@ -133,6 +139,7 @@ const initializeAndConfigureServerApplication = async () => {
     httpServerApplication.use(USER_SUPPORT_CONFIGURATION.global_request, userManagementRoutingController);
     httpServerApplication.use(ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminPrivilegesRouteManagement);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
+    
 };
 
 

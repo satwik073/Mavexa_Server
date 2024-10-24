@@ -36,7 +36,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require('./Common/instrument');
-const Sentry = __importStar(require("@sentry/node"));
 const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter"));
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./Database/MongoDB/db_config"));
@@ -60,13 +59,19 @@ const expressServerFramework = require('express');
 const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
 const dataCompressionMiddleware = require('compression');
+const Sentry = require("@sentry/node");
+const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+const SentryUpdates = __importStar(require("@sentry/browser"));
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    debug: true,
+    integrations: [
+        nodeProfilingIntegration(),
+        SentryUpdates.replayIntegration(),
+    ],
     tracesSampleRate: 1.0,
-    integrations: (integrations) => {
-        return integrations.filter(integration => integration.name !== 'OpenTelemetry');
-    }
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    profilesSampleRate: 1.0,
 });
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {

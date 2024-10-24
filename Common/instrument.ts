@@ -1,18 +1,50 @@
-// Import with `import * as Sentry from "@sentry/node"` if you are using ESM
+
 import * as SentryUpdates from "@sentry/browser";
 const Sentry = require("@sentry/node");
 const { nodeProfilingIntegration } = require("@sentry/profiling-node");
 
 Sentry.init({
-  dsn: "https://533babc71d639f0b928321d7900e796f@o4507854423916544.ingest.us.sentry.io/4507854430535680",
+  dsn: process.env.SENTRY_DSN,
   integrations: [
     nodeProfilingIntegration(),
       SentryUpdates.replayIntegration(),
   ],
-  // Tracing
-  tracesSampleRate: 1.0, //  Capture 100% of the transactions
-  replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  // Set sampling rate for profiling - this is relative to tracesSampleRate
   profilesSampleRate: 1.0,
+  environment: process.env.NODE_ENV || 'development',
+  release: process.env.RELEASE || 'v1.0.0',
+  beforeSend(event: any, hint: { originalException: any; }) {
+    const error = hint.originalException;
+    if (error && error.status === 404) {
+      return null; 
+    }
+    return event;
+  },
+  beforeBreadcrumb(breadcrumb: { category: string; data: { url: string | string[]; }; }, hint: any) {
+    if (breadcrumb.category === 'http' && breadcrumb.data.url.includes('/health-check')) {
+      return null;
+    }
+    return breadcrumb;
+  },
+  autoSessionTracking: true, 
+  attachStacktrace: true,
+  debug: process.env.NODE_ENV === 'development'
 });
+
+const simulateError = () => {
+  try {
+    throw new Error("Simulated advanced error for Sentry testing");
+  } catch (error) {
+    Sentry.captureException(error);
+    console.log("Test error captured and sent to Sentry");
+  }
+};
+
+simulateError();
+process.on("unhandledRejection", (reason, promise) => {
+  console.log("Unhandled Rejection:", reason);
+  Sentry.captureException(reason); 
+});
+console.log("✅ Sentry initialized with advanced options for profiling, tracing, and error filtering");
