@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.get_user_profile = exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.letting_user_login = exports.letting_user_registered = exports.UserRegistrationProcess = void 0;
+exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.get_user_profile = exports.letting_user_login = exports.letting_user_registered = exports.UserRegistrationProcess = void 0;
 const bcrypt = require('bcryptjs');
 const EmailServices_1 = require("../../Services/EmailServices");
 const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReducer");
@@ -45,6 +45,7 @@ const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const PreDefinedSuccess_1 = require("../../Constants/Success/PreDefinedSuccess");
 const RedisConfigurations_1 = require("../../Database/RedisCacheDB/RedisConfigurations");
+const CacheUtils_1 = require("../../Database/RedisCacheDB/CacheUtils");
 // Example usage
 // const deleteCache = async () => {
 //     try {
@@ -71,7 +72,7 @@ exports.UserRegistrationProcess = (0, ErrorHandlerReducer_1.ASYNC_ERROR_HANDLER_
     }, structure_1.default.USER_DESC);
     const cacheKey = `user:${userRegistrationData.id}`;
     try {
-        yield setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, userRegistrationData, 3600);
+        yield (0, CacheUtils_1.setCacheWithAdvancedTTLHandlingAndPipelining)(cacheKey, userRegistrationData, 3600);
     }
     catch (redisError) {
         console.error('Failed to store user registration data in Redis:', redisError);
@@ -102,7 +103,7 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
         console.log(new_registered_user_defined.id);
         const cacheKey = `user:${new_registered_user_defined.id}`;
         try {
-            setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, new_registered_user_defined, 3600);
+            (0, CacheUtils_1.setCacheWithAdvancedTTLHandlingAndPipelining)(cacheKey, new_registered_user_defined, 3600);
         }
         catch (redisError) {
             console.error('Failed to store user registration data in Redis:', redisError);
@@ -252,6 +253,60 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
     }
 });
 exports.letting_user_login = letting_user_login;
+const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // console.log("Function get_user_profile called");
+        // console.log("User email from request:", request.user?.registered_user_email);
+        // let cachedUserData;
+        // try {
+        //     console.log("Attempting to fetch data from Redis...");
+        //     cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        //     console.log("Fetched data from Redis:", cachedUserData);
+        // } catch (err) {
+        //     console.error('Error fetching data from Redis:', err);
+        // }
+        console.log("Checking Redis data...");
+        // if (cachedUserData) {
+        //     console.log("Redis data exists, parsing...");
+        //     const parsedData = JSON.parse(cachedUserData);
+        //     if (parsedData === null || parsedData === "user not found") {
+        //         console.log('User not found in Redis cache');
+        //         return response.status(HTTPS_STATUS_CODE.NOT_FOUND).json({
+        //             success: false,
+        //             message: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+        //         });
+        //     }
+        //     console.log('User data retrieved from Redis cache:', parsedData);
+        //     return response.status(HTTPS_STATUS_CODE.OK).json({
+        //         success: true,
+        //         message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+        //         userInfo: parsedData
+        //     });
+        // }
+        // Fallback if Redis does not contain user data
+        const fetched_loggedin_user = request.user;
+        console.log("Fallback to user data from request:", fetched_loggedin_user);
+        if (!fetched_loggedin_user) {
+            throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
+        }
+        console.log("Returning user data from request");
+        return response.status(http_status_codes_1.default.OK).json({
+            success: true,
+            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+            userInfo: fetched_loggedin_user
+        });
+    }
+    catch (error_value_displayed) {
+        console.log("hi");
+        console.error('Error in get_user_profile:', error_value_displayed);
+        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
+            Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR,
+            details: error_value_displayed.message,
+            NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
+        });
+    }
+});
+exports.get_user_profile = get_user_profile;
 const verify_email_provided_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { otp_for_verification } = request.body;
@@ -342,49 +397,4 @@ const reset_password_for_verified_user = (request, response) => __awaiter(void 0
     }
 });
 exports.reset_password_for_verified_user = reset_password_for_verified_user;
-const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
-    try {
-        console.log((_a = request.user) === null || _a === void 0 ? void 0 : _a.registered_user_email);
-        let cachedUserData;
-        try {
-            cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${(_b = request.user) === null || _b === void 0 ? void 0 : _b.registered_user_email}`);
-        }
-        catch (err) {
-            console.error('Error fetching data from Redis:', err);
-        }
-        console.log("this", cachedUserData);
-        if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
-            return response.status(http_status_codes_1.default.OK).json({
-                success: true,
-                message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-                userInfo: JSON.parse(cachedUserData)
-            });
-        }
-        const fetched_loggedin_user = request.user;
-        console.log("hello", fetched_loggedin_user);
-        if (!fetched_loggedin_user) {
-            throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
-        }
-        console.log('User data fetched from request');
-        return response.status(http_status_codes_1.default.OK).json({
-            success: true,
-            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-            userInfo: fetched_loggedin_user
-        });
-    }
-    catch (error_value_displayed) {
-        console.error('Error in get_user_profile:', error_value_displayed);
-        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
-            Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR,
-            details: error_value_displayed.message,
-            NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
-        });
-    }
-});
-exports.get_user_profile = get_user_profile;
-function setCacheWithAdvancedTTLHandlingAndPipelining(arg0, userDataToCache, arg2) {
-    throw new Error("Function not implemented.");
-}
 //# sourceMappingURL=userControllersGenerated.js.map
