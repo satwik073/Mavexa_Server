@@ -8,6 +8,7 @@ import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/P
 import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
 import { redisClusterConnection } from "../../Database/RedisCacheDB/RedisConfigurations";
+import { setCacheWithAdvancedTTLHandlingAndPipelining } from "../../Database/RedisCacheDB/CacheUtils";
 
 
 
@@ -279,6 +280,66 @@ export const letting_user_login = async (request: Request, response: Response) =
     }
 };
 
+export const get_user_profile = async (request: AuthenticatedRequest, response: Response) => {
+    try {
+        // console.log("Function get_user_profile called");
+        // console.log("User email from request:", request.user?.registered_user_email);
+
+        // let cachedUserData;
+        // try {
+        //     console.log("Attempting to fetch data from Redis...");
+        //     cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        //     console.log("Fetched data from Redis:", cachedUserData);
+        // } catch (err) {
+        //     console.error('Error fetching data from Redis:', err);
+        // }
+
+        console.log("Checking Redis data...");
+        // if (cachedUserData) {
+        //     console.log("Redis data exists, parsing...");
+        //     const parsedData = JSON.parse(cachedUserData);
+        //     if (parsedData === null || parsedData === "user not found") {
+        //         console.log('User not found in Redis cache');
+        //         return response.status(HTTPS_STATUS_CODE.NOT_FOUND).json({
+        //             success: false,
+        //             message: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+        //         });
+        //     }
+
+        //     console.log('User data retrieved from Redis cache:', parsedData);
+        //     return response.status(HTTPS_STATUS_CODE.OK).json({
+        //         success: true,
+        //         message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+        //         userInfo: parsedData
+        //     });
+        // }
+
+        // Fallback if Redis does not contain user data
+        const fetched_loggedin_user = request.user;
+        console.log("Fallback to user data from request:", fetched_loggedin_user);
+
+        if (!fetched_loggedin_user) {
+            throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
+        }
+
+        console.log("Returning user data from request");
+        return response.status(HTTPS_STATUS_CODE.OK).json({
+            success: true,
+            message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+            userInfo: fetched_loggedin_user
+        });
+
+    } catch (error_value_displayed) {
+        console.log("hi")
+        console.error('Error in get_user_profile:', error_value_displayed);
+        return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            Error: DEFAULT_EXECUTED.ERROR,
+            details: (error_value_displayed as Error).message,
+            NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+        });
+    }
+};
+
 
 export const verify_email_provided_user = async (request: AuthenticatedRequest, response: Response) => {
     try {
@@ -370,48 +431,5 @@ export const reset_password_for_verified_user = async (request: AuthenticatedReq
     } catch (error_value_displayed) {
         return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
     }
-}
-export const get_user_profile = async (request: AuthenticatedRequest, response: Response) => {
-    try {
-        console.log(request.user?.registered_user_email)
-        let cachedUserData;
-        try {
-            cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
-        } catch (err) {
-            console.error('Error fetching data from Redis:', err);
-        }
-        console.log("this",cachedUserData)
-        if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
-            return response.status(HTTPS_STATUS_CODE.OK).json({
-                success: true,
-                message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-                userInfo: JSON.parse(cachedUserData)
-            });
-        }
-        const fetched_loggedin_user = request.user;
-        console.log("hello",fetched_loggedin_user)
-        if (!fetched_loggedin_user) {
-            throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
-        }
-
-        console.log('User data fetched from request');
-        return response.status(HTTPS_STATUS_CODE.OK).json({
-            success: true,
-            message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-            userInfo: fetched_loggedin_user
-        });
-
-    } catch (error_value_displayed) {
-        console.error('Error in get_user_profile:', error_value_displayed);
-        return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
-            Error: DEFAULT_EXECUTED.ERROR,
-            details: (error_value_displayed as Error).message,
-            NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
-        });
-    }
-};
-function setCacheWithAdvancedTTLHandlingAndPipelining(arg0: string, userDataToCache: any, arg2: number) {
-    throw new Error("Function not implemented.");
 }
 
