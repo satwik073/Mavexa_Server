@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 import { email_service_enabled } from "../../Services/EmailServices";
 import { ASYNC_ERROR_HANDLER_ESTAIBLISHED, EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DATA_OBJECT } from "../../Middlewares/Error/ErrorHandlerReducer";
 import RolesSpecified, { AuthTypeDeclared, UserDocument } from "../../Common/structure";
-import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
+import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, OTP_VALIDATOR_SETTLE, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
@@ -189,6 +189,7 @@ export const UserAuthPersist = async (request: Request, response: Response) => {
                         email: trackingUser.registered_user_email,
                         username: trackingUser.registered_username,
                         password: trackingUser.registered_user_password,
+                        otpVerification : trackingUser?.otp_for_verification,                    
                         verified: trackingUser.is_user_verified,
                         role: trackingUser.authorities_provided_by_role,
                     };
@@ -438,27 +439,45 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
 export const verify_email_provided_user = async (request: AuthenticatedRequest, response: Response) => {
     try {
         const { otp_for_verification } = request.body;
-        if (!otp_for_verification) {
-            return response.status(400).json({ Error: "Please provide otp" });
-        }
-        const stored_token_for_user_request = await OTP_GENERATOR_CALLED(otp_for_verification, request.user.otp_for_verification)
+        const missingAttributes = await MISSING_FIELDS_VALIDATOR(
+            { otp_for_verification },
+            response,
+            AuthTypeDeclared.USER_LOGIN
+        );
 
-        if (stored_token_for_user_request) {
+        if (missingAttributes) return missingAttributes;
+
+        const cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        const parsedData = cachedUserData ? JSON.parse(cachedUserData) : null;
+
+        // Validate OTP based on cached or direct user data
+        const userOtp = parsedData ? parsedData.otpVerification : request.user?.otp_for_verification;
+        const OTPValidator = await OTP_VALIDATOR_SETTLE(otp_for_verification, userOtp);
+        console.log("this",OTPValidator)
+        if (OTPValidator) {
+            // Update the verification status in Redis
+            const updatedUserData = {
+                ...parsedData,
+                otpVerification: otp_for_verification, // Update the OTP in Redis
+                verified: true, // Set verified to true
+            };
             request.user.otp_for_verification = "";
             request.user.is_user_verified = true;
+            await request?.user?.save();
 
-            await request.user.save();
+
+            await redisClusterConnection.set(`user:${request.user?.registered_user_email}`, JSON.stringify(updatedUserData));
 
             return response.status(200).json({ success: true, message: "Email verified successfully" });
         } else {
-            return response.status(400).json({ Error: "Invalid OTP, please try again" });
+            return response.status(400).json({ success: false, message: "Invalid OTP" });
         }
-
-    } catch (error_value_displayed) {
-        console.error(error_value_displayed);
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: (error_value_displayed as Error).message });
+    } catch (error) {
+        console.error("Error during email verification:", error);
+        return response.status(500).json({ success: false, message: 'Something went wrong, try again later', details: error.message });
     }
-}
+};
+
 export const resend_otp_for_verification_request = async (request: AuthenticatedRequest, response: Response) => {
     try {
         const fetched_loggedin_user = request.user;
