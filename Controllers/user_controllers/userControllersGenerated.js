@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.get_user_profile = exports.letting_user_login = exports.letting_user_registered = exports.UserRegistrationProcess = void 0;
+exports.reset_password_for_verified_user = exports.resend_otp_for_verification_request = exports.verify_email_provided_user = exports.get_user_profile = exports.letting_user_login = exports.UserAuthPersist = exports.letting_user_registered = exports.UserRegistrationProcess = void 0;
 const bcrypt = require('bcryptjs');
 const EmailServices_1 = require("../../Services/EmailServices");
 const ErrorHandlerReducer_1 = require("../../Middlewares/Error/ErrorHandlerReducer");
@@ -130,119 +130,171 @@ const letting_user_registered = (request, response) => __awaiter(void 0, void 0,
     }
 });
 exports.letting_user_registered = letting_user_registered;
+const UserAuthPersist = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { registered_user_email, registered_user_password } = request.body;
+        const missingAttributes = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+        if (missingAttributes)
+            return missingAttributes;
+        let userDataCaptured;
+        try {
+            userDataCaptured = yield (RedisConfigurations_1.redisClusterConnection === null || RedisConfigurations_1.redisClusterConnection === void 0 ? void 0 : RedisConfigurations_1.redisClusterConnection.get(`user:${registered_user_email}`));
+            if (userDataCaptured) {
+                userDataCaptured = JSON.parse(userDataCaptured);
+                const passwordValid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, userDataCaptured.password);
+                if (passwordValid) {
+                    const tokenProvider = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(userDataCaptured._id);
+                    return response.status(http_status_codes_1.default.OK).json({
+                        success: true,
+                        userInfo: userDataCaptured,
+                        token: tokenProvider
+                    });
+                }
+                else {
+                    return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
+                        success: false,
+                        message: "Invalid email or password"
+                    });
+                }
+            }
+            else {
+                const trackingUser = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+                // Define a type guard function to check if trackingUser is of type UserDocument
+                function isUserDocument(user) {
+                    return ('registered_user_email' in user &&
+                        'registered_user_password' in user &&
+                        'registered_username' in user &&
+                        'authorities_provided_by_role' in user &&
+                        '_id' in user);
+                }
+                if (trackingUser && isUserDocument(trackingUser)) {
+                    const dataSentToRedis = {
+                        _id: trackingUser._id,
+                        email: trackingUser.registered_user_email,
+                        username: trackingUser.registered_username,
+                        password: trackingUser.registered_user_password,
+                        verified: trackingUser.is_user_verified,
+                        role: trackingUser.authorities_provided_by_role,
+                    };
+                    yield (RedisConfigurations_1.redisClusterConnection === null || RedisConfigurations_1.redisClusterConnection === void 0 ? void 0 : RedisConfigurations_1.redisClusterConnection.set(`user:${registered_user_email}`, JSON.stringify(dataSentToRedis), 'EX', 3600));
+                    const passcodeValid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, trackingUser.registered_user_password);
+                    if (passcodeValid) {
+                        const token = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(trackingUser._id);
+                        return response.status(http_status_codes_1.default.OK).json({
+                            success: true,
+                            userInfo: trackingUser,
+                            token: token,
+                        });
+                    }
+                    else {
+                        return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
+                            success: false,
+                            message: "Invalid email or password",
+                        });
+                    }
+                }
+                else {
+                    return response.status(http_status_codes_1.default.NOT_FOUND).json({
+                        success: false,
+                        message: "User not found"
+                    });
+                }
+            }
+        }
+        catch (err) {
+            console.error("Internal error:", err);
+            return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: "An internal error occurred while processing the request"
+            });
+        }
+    }
+    catch (err) {
+        console.error("Unexpected error:", err);
+        return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "An unexpected error occurred"
+        });
+    }
+});
+exports.UserAuthPersist = UserAuthPersist;
 const letting_user_login = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log(typeof RedisConfigurations_1.redisClusterConnection.pipeline); // Should return 'function'
+        console.log("Redis pipeline type:", typeof RedisConfigurations_1.redisClusterConnection.pipeline); // Should log 'function'
         const { registered_user_email, registered_user_password } = request.body;
         let cachedUserData;
+        // Validate required fields
         const is_exists_missing_fields = (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ registered_user_email, registered_user_password }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
         if (is_exists_missing_fields)
             return is_exists_missing_fields;
+        // Check Redis cache for user data
         try {
+            console.log(`Checking Redis for user data: user:${registered_user_email}`);
             cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${registered_user_email}`);
+            console.log("Redis data retrieved:", cachedUserData);
         }
         catch (err) {
             console.error('Error fetching data from Redis:', err);
         }
         let is_existing_database_user;
+        // Use cached data if available, otherwise retrieve from MongoDB
         if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
+            console.log('User data found in Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         }
         else {
-            console.log('No cache found, fetching user data from database');
+            console.log('No cache found, querying MongoDB for user data');
             is_existing_database_user = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)(registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
-            console.log(is_existing_database_user);
+            console.log("MongoDB data retrieved:", is_existing_database_user);
+            // Cache the MongoDB user data in Redis
             if (is_existing_database_user) {
                 try {
                     console.log('Caching user data in Redis');
-                    if ('registered_user_email' in is_existing_database_user &&
-                        'registered_user_password' in is_existing_database_user &&
-                        'registered_username' in is_existing_database_user &&
-                        'authorities_provided_by_role' in is_existing_database_user &&
-                        '_id' in is_existing_database_user) {
-                        const userDataToCache = {
-                            id: is_existing_database_user._id,
-                            email: is_existing_database_user.registered_user_email,
-                            username: is_existing_database_user.registered_username,
-                            password: is_existing_database_user.registered_user_password,
-                            verified: is_existing_database_user.is_user_verified,
-                            role: is_existing_database_user.authorities_provided_by_role,
-                        };
-                        if (RedisConfigurations_1.redisClusterConnection) {
-                            console.log('Redis connection is not initialized.');
-                        }
-                        yield RedisConfigurations_1.redisClusterConnection.set(`user:${registered_user_email}`, // Cache key
-                        JSON.stringify(userDataToCache), // Serialized user data
-                        'EX', // Expiration option
-                        3600 // TTL in seconds (1 hour)
-                        );
-                    }
+                    const userDataToCache = {
+                        id: is_existing_database_user._id,
+                        email: is_existing_database_user.registered_user_email,
+                        username: is_existing_database_user.registered_username,
+                        password: is_existing_database_user.registered_user_password,
+                        verified: is_existing_database_user.is_user_verified,
+                        role: is_existing_database_user.authorities_provided_by_role,
+                    };
+                    yield RedisConfigurations_1.redisClusterConnection.set(`user:${registered_user_email}`, JSON.stringify(userDataToCache), 'EX', 3600 // TTL of 1 hour
+                    );
                 }
                 catch (err) {
                     console.error('Error setting data in Redis:', err);
                 }
             }
             else {
-                console.log('User not found in database');
+                console.log('User not found in MongoDB');
                 return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
                     Error: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
                 });
             }
         }
-        console.log("User data:", is_existing_database_user);
-        if (is_existing_database_user && cachedUserData) {
-            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.password);
-            console.log('Password validation result:', is_password_valid);
-            if (is_password_valid) {
-                const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
-                return response.status(http_status_codes_1.default.OK).json({
-                    success: true,
-                    message: [{
-                            SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-                            USER_ROLE: structure_1.default.USER_DESC,
-                            AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
-                        }],
-                    userInfo: is_existing_database_user,
-                    token: token_for_authentication_generated
-                });
-            }
-            else {
-                console.log('Invalid password');
-                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
-                    Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
-                });
-            }
-        }
-        else if (is_existing_database_user && !cachedUserData) {
-            const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.registered_user_password);
-            console.log('Password validation result:', is_password_valid);
-            if (is_password_valid) {
-                const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
-                return response.status(http_status_codes_1.default.OK).json({
-                    success: true,
-                    message: [{
-                            SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-                            USER_ROLE: structure_1.default.USER_DESC,
-                            AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
-                        }],
-                    userInfo: is_existing_database_user,
-                    token: token_for_authentication_generated
-                });
-            }
-            else {
-                console.log('Invalid password');
-                return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
-                    Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
-                });
-            }
+        console.log("User data for validation:", is_existing_database_user);
+        // Password validation logic
+        const is_password_valid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, is_existing_database_user.password || is_existing_database_user.registered_user_password);
+        console.log('Password validation result:', is_password_valid);
+        if (is_password_valid) {
+            const token_for_authentication_generated = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(is_existing_database_user._id);
+            return response.status(http_status_codes_1.default.OK).json({
+                success: true,
+                message: [{
+                        SUCCESS_MESSAGE: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC).SUCCESS_MESSAGE,
+                        USER_ROLE: structure_1.default.USER_DESC,
+                        AUTH_TYPE: structure_1.AuthTypeDeclared.USER_LOGIN
+                    }],
+                userInfo: is_existing_database_user,
+                token: token_for_authentication_generated
+            });
         }
         else {
-            console.log('Password field not found in user data');
+            console.log('Invalid password');
+            return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
+                Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
+            });
         }
-        return response.status(http_status_codes_1.default.UNAUTHORIZED).json({
-            Error: PreDefinedErrors_1.ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(structure_1.default.USER_DESC)
-        });
     }
     catch (error) {
         console.error('Error in letting_user_login:', error);
@@ -254,13 +306,48 @@ const letting_user_login = (request, response) => __awaiter(void 0, void 0, void
 });
 exports.letting_user_login = letting_user_login;
 const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     try {
-        // console.log("Function get_user_profile called");
-        // console.log("User email from request:", request.user?.registered_user_email);
-        // let cachedUserData;
+        console.log("Function get_user_profile called");
+        console.log("User email from request:", (_a = request.user) === null || _a === void 0 ? void 0 : _a.registered_user_email);
+        let cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${(_b = request.user) === null || _b === void 0 ? void 0 : _b.registered_user_email}`);
+        if (cachedUserData) {
+            return response.status(http_status_codes_1.default.OK).json({
+                success: true,
+                userInfo: JSON.parse(cachedUserData),
+            });
+        }
+        else {
+            const userDataCaptured = yield (0, ErrorHandlerReducer_1.EXISTING_USER_FOUND_IN_DATABASE)((_c = request === null || request === void 0 ? void 0 : request.user) === null || _c === void 0 ? void 0 : _c.registered_user_email, structure_1.AuthTypeDeclared.USER_LOGIN, structure_1.default.USER_DESC);
+            if (userDataCaptured) {
+                return response.status(http_status_codes_1.default.OK).json({
+                    success: true,
+                    userInfo: userDataCaptured,
+                });
+            }
+        }
+        // if ( cachedUserData){
+        //     return response.status(HTTPS_STATUS_CODE.NOT_FOUND).json({
+        //         // success: false,
+        //         message: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+        //     });
+        // }
+        // else {
+        //     const fetched_loggedin_user = request.user;
+        //     console.log("Fallback to user data from request:", fetched_loggedin_user);
+        //     if (!fetched_loggedin_user) {
+        //         throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
+        //     }
+        //     console.log("Returning user data from request");
+        //     return response.status(HTTPS_STATUS_CODE.OK).json({
+        //         success: true,
+        //         message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+        //         userInfo: fetched_loggedin_user
+        //     });
+        // }
         // try {
         //     console.log("Attempting to fetch data from Redis...");
-        //     cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        //     cachedUserData = 
         //     console.log("Fetched data from Redis:", cachedUserData);
         // } catch (err) {
         //     console.error('Error fetching data from Redis:', err);
@@ -284,17 +371,6 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
         //     });
         // }
         // Fallback if Redis does not contain user data
-        const fetched_loggedin_user = request.user;
-        console.log("Fallback to user data from request:", fetched_loggedin_user);
-        if (!fetched_loggedin_user) {
-            throw new Error(PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE);
-        }
-        console.log("Returning user data from request");
-        return response.status(http_status_codes_1.default.OK).json({
-            success: true,
-            message: PreDefinedSuccess_1.SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(structure_1.default.USER_DESC).SUCCESS_MESSAGE,
-            userInfo: fetched_loggedin_user
-        });
     }
     catch (error_value_displayed) {
         console.log("hi");
@@ -302,7 +378,7 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
         return response.status(http_status_codes_1.default.INTERNAL_SERVER_ERROR).json({
             Error: PreDefinedErrors_1.DEFAULT_EXECUTED.ERROR,
             details: error_value_displayed.message,
-            NOTFOUND: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.USER_DESC).MESSAGE
+            // NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
         });
     }
 });

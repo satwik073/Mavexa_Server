@@ -2,13 +2,14 @@ import { Request, response, Response } from "express";
 const bcrypt = require('bcryptjs');
 import { email_service_enabled } from "../../Services/EmailServices";
 import { ASYNC_ERROR_HANDLER_ESTAIBLISHED, EXISTING_USER_FOUND_IN_DATABASE, MISSING_FIELDS_VALIDATOR, TRACKING_DATA_OBJECT } from "../../Middlewares/Error/ErrorHandlerReducer";
-import RolesSpecified, { AuthTypeDeclared } from "../../Common/structure";
+import RolesSpecified, { AuthTypeDeclared, UserDocument } from "../../Common/structure";
 import { DECODING_INCOMING_SECURITY_PASSCODE, JWT_KEY_GENERATION_ONBOARDED, OTP_GENERATOR_CALLED, SECURING_PASSCODE } from "../../Constants/Functions/CommonFunctions";
 import { DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
 import HTTPS_STATUS_CODE from "http-status-codes";
 import { SUCCESS_VALUES_FETCHER } from "../../Constants/Success/PreDefinedSuccess";
 import { redisClusterConnection } from "../../Database/RedisCacheDB/RedisConfigurations";
 import { setCacheWithAdvancedTTLHandlingAndPipelining } from "../../Database/RedisCacheDB/CacheUtils";
+import { userInfo } from "os";
 
 
 
@@ -68,7 +69,7 @@ export const UserRegistrationProcess = ASYNC_ERROR_HANDLER_ESTAIBLISHED(async (r
 
     const cacheKey = `user:${userRegistrationData.id}`;
     try {
-        await setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, userRegistrationData , 3600);
+        await setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, userRegistrationData, 3600);
     } catch (redisError) {
         console.error('Failed to store user registration data in Redis:', redisError);
     }
@@ -103,11 +104,11 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         const { recognized_user: new_registered_user_defined, token_for_authentication_generated } = await TRACKING_DATA_OBJECT({ registered_user_email, registered_username, registered_user_password: hashed_password_generated, otp_for_verification: otp_generating_code_block }, RolesSpecified.USER_DESC);
         console.log(new_registered_user_defined.id)
         const cacheKey = `user:${new_registered_user_defined.id}`;
-    try {
-        setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, new_registered_user_defined , 3600);
-    } catch (redisError) {
-        console.error('Failed to store user registration data in Redis:', redisError);
-    }
+        try {
+            setCacheWithAdvancedTTLHandlingAndPipelining(cacheKey, new_registered_user_defined, 3600);
+        } catch (redisError) {
+            console.error('Failed to store user registration data in Redis:', redisError);
+        }
         return response.status(HTTPS_STATUS_CODE.OK).json({
             success: true,
             message: [
@@ -129,147 +130,210 @@ export const letting_user_registered = async (request: Request<{}, {}, UserRegis
         });
     }
 }
+
+export const UserAuthPersist = async (request: Request, response: Response) => {
+    try {
+        const { registered_user_email, registered_user_password } = request.body;
+        const missingAttributes = MISSING_FIELDS_VALIDATOR(
+            { registered_user_email, registered_user_password },
+            response,
+            AuthTypeDeclared.USER_LOGIN
+        );
+        if (missingAttributes) return missingAttributes;
+
+        let userDataCaptured: any;
+
+        try {
+            userDataCaptured = await redisClusterConnection?.get(`user:${registered_user_email}`);
+            if (userDataCaptured) {
+                userDataCaptured = JSON.parse(userDataCaptured);
+                const passwordValid = await DECODING_INCOMING_SECURITY_PASSCODE(
+                    registered_user_password,
+                    userDataCaptured.password
+                );
+
+                if (passwordValid) {
+                    const tokenProvider = await JWT_KEY_GENERATION_ONBOARDED(userDataCaptured._id);
+                    return response.status(HTTPS_STATUS_CODE.OK).json({
+                        success: true,
+                        userInfo: userDataCaptured,
+                        token : tokenProvider
+                    });
+                } else {
+                    return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                        success: false,
+                        message: "Invalid email or password"
+                    });
+                }
+            } else {
+                const trackingUser = await EXISTING_USER_FOUND_IN_DATABASE(
+                    registered_user_email,
+                    AuthTypeDeclared.USER_LOGIN,
+                    RolesSpecified.USER_DESC
+                );
+
+                // Define a type guard function to check if trackingUser is of type UserDocument
+                function isUserDocument(user: any): user is UserDocument {
+                    return (
+                        'registered_user_email' in user &&
+                        'registered_user_password' in user &&
+                        'registered_username' in user &&
+                        'authorities_provided_by_role' in user &&
+                        '_id' in user
+                    );
+                }
+
+                if (trackingUser && isUserDocument(trackingUser)) {
+                    const dataSentToRedis = {
+                        _id: trackingUser._id,
+                        email: trackingUser.registered_user_email,
+                        username: trackingUser.registered_username,
+                        password: trackingUser.registered_user_password,
+                        verified: trackingUser.is_user_verified,
+                        role: trackingUser.authorities_provided_by_role,
+                    };
+                    await redisClusterConnection?.set(`user:${registered_user_email}`, JSON.stringify(dataSentToRedis), 'EX',
+                        3600)
+                    const passcodeValid = await DECODING_INCOMING_SECURITY_PASSCODE(
+                        registered_user_password,
+                        trackingUser.registered_user_password
+                    );
+
+                    if (passcodeValid) {
+                        const token = await JWT_KEY_GENERATION_ONBOARDED(trackingUser._id);
+                        return response.status(HTTPS_STATUS_CODE.OK).json({
+                            success: true,
+                            userInfo: trackingUser,
+                            token: token,
+                        });
+                    } else {
+                        return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                            success: false,
+                            message: "Invalid email or password",
+                        });
+                    }
+                }
+                else {
+                    return response.status(HTTPS_STATUS_CODE.NOT_FOUND).json({
+                        success: false,
+                        message: "User not found"
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Internal error:", err);
+            return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: "An internal error occurred while processing the request"
+            });
+        }
+    } catch (err) {
+        console.error("Unexpected error:", err);
+        return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: "An unexpected error occurred"
+        });
+    }
+};
+
+
 export const letting_user_login = async (request: Request, response: Response) => {
     try {
-        console.log(typeof redisClusterConnection.pipeline); // Should return 'function'
+        console.log("Redis pipeline type:", typeof redisClusterConnection.pipeline); // Should log 'function'
 
         const { registered_user_email, registered_user_password } = request.body;
 
-
-
         let cachedUserData;
+
+        // Validate required fields
         const is_exists_missing_fields = MISSING_FIELDS_VALIDATOR(
             { registered_user_email, registered_user_password },
             response,
             AuthTypeDeclared.USER_LOGIN
         );
         if (is_exists_missing_fields) return is_exists_missing_fields;
+
+        // Check Redis cache for user data
         try {
+            console.log(`Checking Redis for user data: user:${registered_user_email}`);
             cachedUserData = await redisClusterConnection.get(`user:${registered_user_email}`);
+            console.log("Redis data retrieved:", cachedUserData);
         } catch (err) {
             console.error('Error fetching data from Redis:', err);
         }
 
         let is_existing_database_user;
 
+        // Use cached data if available, otherwise retrieve from MongoDB
         if (cachedUserData) {
-            console.log('User data retrieved from Redis cache');
+            console.log('User data found in Redis cache');
             is_existing_database_user = JSON.parse(cachedUserData);
         } else {
-            console.log('No cache found, fetching user data from database');
+            console.log('No cache found, querying MongoDB for user data');
             is_existing_database_user = await EXISTING_USER_FOUND_IN_DATABASE(
                 registered_user_email,
                 AuthTypeDeclared.USER_LOGIN,
                 RolesSpecified.USER_DESC
             );
-            console.log(is_existing_database_user)
+            console.log("MongoDB data retrieved:", is_existing_database_user);
 
-
+            // Cache the MongoDB user data in Redis
             if (is_existing_database_user) {
                 try {
                     console.log('Caching user data in Redis');
-                    if (
-                        'registered_user_email' in is_existing_database_user &&
-                        'registered_user_password' in is_existing_database_user &&
-                        'registered_username' in is_existing_database_user &&
-                        'authorities_provided_by_role' in is_existing_database_user &&
-                        '_id' in is_existing_database_user
-                    ) {
-                        const userDataToCache: any = {
-                            id: is_existing_database_user._id,
-                            email: is_existing_database_user.registered_user_email,
-                            username: is_existing_database_user.registered_username,
-                            password: is_existing_database_user.registered_user_password,
-                            verified: is_existing_database_user.is_user_verified,
-                            role: is_existing_database_user.authorities_provided_by_role,
-                        };
-                        if (redisClusterConnection) {
-                            console.log('Redis connection is not initialized.');
-                        }
-                        await redisClusterConnection.set(
-                            `user:${registered_user_email}`,   // Cache key
-                            JSON.stringify(userDataToCache),   // Serialized user data
-                            'EX',                              // Expiration option
-                            3600                               // TTL in seconds (1 hour)
-                        );
-                        
-
-
-
-                    }
+                    const userDataToCache = {
+                        id: is_existing_database_user._id,
+                        email: is_existing_database_user.registered_user_email,
+                        username: is_existing_database_user.registered_username,
+                        password: is_existing_database_user.registered_user_password,
+                        verified: is_existing_database_user.is_user_verified,
+                        role: is_existing_database_user.authorities_provided_by_role,
+                    };
+                    await redisClusterConnection.set(
+                        `user:${registered_user_email}`,
+                        JSON.stringify(userDataToCache),
+                        'EX',
+                        3600 // TTL of 1 hour
+                    );
                 } catch (err) {
                     console.error('Error setting data in Redis:', err);
                 }
             } else {
-                console.log('User not found in database');
+                console.log('User not found in MongoDB');
                 return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
                     Error: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
                 });
             }
         }
 
-        console.log("User data:", is_existing_database_user);
-        if (is_existing_database_user && cachedUserData) {
-            const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
-                registered_user_password,
-                is_existing_database_user.password
-            );
+        console.log("User data for validation:", is_existing_database_user);
 
-            console.log('Password validation result:', is_password_valid);
+        // Password validation logic
+        const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
+            registered_user_password,
+            is_existing_database_user.password || is_existing_database_user.registered_user_password
+        );
 
-            if (is_password_valid) {
-                const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
-                return response.status(HTTPS_STATUS_CODE.OK).json({
-                    success: true,
-                    message: [{
-                        SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-                        USER_ROLE: RolesSpecified.USER_DESC,
-                        AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
-                    }],
-                    userInfo: is_existing_database_user,
-                    token: token_for_authentication_generated
-                });
-            } else {
-                console.log('Invalid password');
-                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
-                    Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
-                });
-            }
+        console.log('Password validation result:', is_password_valid);
+
+        if (is_password_valid) {
+            const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
+            return response.status(HTTPS_STATUS_CODE.OK).json({
+                success: true,
+                message: [{
+                    SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+                    USER_ROLE: RolesSpecified.USER_DESC,
+                    AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
+                }],
+                userInfo: is_existing_database_user,
+                token: token_for_authentication_generated
+            });
+        } else {
+            console.log('Invalid password');
+            return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
+                Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
+            });
         }
-        else if (is_existing_database_user && !cachedUserData) {
-            const is_password_valid = await DECODING_INCOMING_SECURITY_PASSCODE(
-                registered_user_password,
-                is_existing_database_user.registered_user_password
-            );
-
-            console.log('Password validation result:', is_password_valid);
-
-            if (is_password_valid) {
-                const token_for_authentication_generated = await JWT_KEY_GENERATION_ONBOARDED(is_existing_database_user._id);
-                return response.status(HTTPS_STATUS_CODE.OK).json({
-                    success: true,
-                    message: [{
-                        SUCCESS_MESSAGE: SUCCESS_VALUES_FETCHER.ENTITY_ONBOARDED_FULFILED(AuthTypeDeclared.USER_LOGIN, RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-                        USER_ROLE: RolesSpecified.USER_DESC,
-                        AUTH_TYPE: AuthTypeDeclared.USER_LOGIN
-                    }],
-                    userInfo: is_existing_database_user,
-                    token: token_for_authentication_generated
-                });
-            } else {
-                console.log('Invalid password');
-                return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
-                    Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
-                });
-            }
-        }
-        else {
-            console.log('Password field not found in user data');
-        }
-
-        return response.status(HTTPS_STATUS_CODE.UNAUTHORIZED).json({
-            Error: ERROR_VALUES_FETCHER.INVALID_CREDENTIALS_PROVIDED(RolesSpecified.USER_DESC)
-        });
 
     } catch (error: any) {
         console.error('Error in letting_user_login:', error);
@@ -282,13 +346,55 @@ export const letting_user_login = async (request: Request, response: Response) =
 
 export const get_user_profile = async (request: AuthenticatedRequest, response: Response) => {
     try {
-        // console.log("Function get_user_profile called");
-        // console.log("User email from request:", request.user?.registered_user_email);
+        console.log("Function get_user_profile called");
+        console.log("User email from request:", request.user?.registered_user_email);
+        let cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        if ( cachedUserData){
 
-        // let cachedUserData;
+            return response.status(HTTPS_STATUS_CODE.OK).json({
+                success: true,
+                userInfo: JSON.parse(cachedUserData),
+            })
+        }
+        else {
+            const userDataCaptured = await EXISTING_USER_FOUND_IN_DATABASE(
+                request?.user?.registered_user_email,
+                AuthTypeDeclared.USER_LOGIN,
+                RolesSpecified.USER_DESC
+            );
+            if ( userDataCaptured){
+
+                return response.status(HTTPS_STATUS_CODE.OK).json({
+                    success: true,
+                    userInfo: userDataCaptured,
+                })
+            }
+        }
+        // if ( cachedUserData){
+        //     return response.status(HTTPS_STATUS_CODE.NOT_FOUND).json({
+        //         // success: false,
+        //         message: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+        //     });
+        // }
+        // else {
+        //     const fetched_loggedin_user = request.user;
+        //     console.log("Fallback to user data from request:", fetched_loggedin_user);
+
+        //     if (!fetched_loggedin_user) {
+        //         throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
+        //     }
+
+        //     console.log("Returning user data from request");
+        //     return response.status(HTTPS_STATUS_CODE.OK).json({
+        //         success: true,
+        //         message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
+        //         userInfo: fetched_loggedin_user
+        //     });
+        // }
+
         // try {
         //     console.log("Attempting to fetch data from Redis...");
-        //     cachedUserData = await redisClusterConnection.get(`user:${request.user?.registered_user_email}`);
+        //     cachedUserData = 
         //     console.log("Fetched data from Redis:", cachedUserData);
         // } catch (err) {
         //     console.error('Error fetching data from Redis:', err);
@@ -315,19 +421,7 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
         // }
 
         // Fallback if Redis does not contain user data
-        const fetched_loggedin_user = request.user;
-        console.log("Fallback to user data from request:", fetched_loggedin_user);
 
-        if (!fetched_loggedin_user) {
-            throw new Error(DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE);
-        }
-
-        console.log("Returning user data from request");
-        return response.status(HTTPS_STATUS_CODE.OK).json({
-            success: true,
-            message: SUCCESS_VALUES_FETCHER.RETRIEVED_ENTITY_SESSION(RolesSpecified.USER_DESC).SUCCESS_MESSAGE,
-            userInfo: fetched_loggedin_user
-        });
 
     } catch (error_value_displayed) {
         console.log("hi")
@@ -335,7 +429,7 @@ export const get_user_profile = async (request: AuthenticatedRequest, response: 
         return response.status(HTTPS_STATUS_CODE.INTERNAL_SERVER_ERROR).json({
             Error: DEFAULT_EXECUTED.ERROR,
             details: (error_value_displayed as Error).message,
-            NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
+            // NOTFOUND: DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.USER_DESC).MESSAGE
         });
     }
 };
