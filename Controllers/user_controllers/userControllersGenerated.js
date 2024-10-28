@@ -173,6 +173,7 @@ const UserAuthPersist = (request, response) => __awaiter(void 0, void 0, void 0,
                         email: trackingUser.registered_user_email,
                         username: trackingUser.registered_username,
                         password: trackingUser.registered_user_password,
+                        otpVerification: trackingUser === null || trackingUser === void 0 ? void 0 : trackingUser.otp_for_verification,
                         verified: trackingUser.is_user_verified,
                         role: trackingUser.authorities_provided_by_role,
                     };
@@ -384,25 +385,34 @@ const get_user_profile = (request, response) => __awaiter(void 0, void 0, void 0
 });
 exports.get_user_profile = get_user_profile;
 const verify_email_provided_user = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
     try {
         const { otp_for_verification } = request.body;
-        if (!otp_for_verification) {
-            return response.status(400).json({ Error: "Please provide otp" });
-        }
-        const stored_token_for_user_request = yield (0, CommonFunctions_1.OTP_GENERATOR_CALLED)(otp_for_verification, request.user.otp_for_verification);
-        if (stored_token_for_user_request) {
+        const missingAttributes = yield (0, ErrorHandlerReducer_1.MISSING_FIELDS_VALIDATOR)({ otp_for_verification }, response, structure_1.AuthTypeDeclared.USER_LOGIN);
+        if (missingAttributes)
+            return missingAttributes;
+        const cachedUserData = yield RedisConfigurations_1.redisClusterConnection.get(`user:${(_a = request.user) === null || _a === void 0 ? void 0 : _a.registered_user_email}`);
+        const parsedData = cachedUserData ? JSON.parse(cachedUserData) : null;
+        // Validate OTP based on cached or direct user data
+        const userOtp = parsedData ? parsedData.otpVerification : (_b = request.user) === null || _b === void 0 ? void 0 : _b.otp_for_verification;
+        const OTPValidator = yield (0, CommonFunctions_1.OTP_VALIDATOR_SETTLE)(otp_for_verification, userOtp);
+        console.log("this", OTPValidator);
+        if (OTPValidator) {
+            // Update the verification status in Redis
+            const updatedUserData = Object.assign(Object.assign({}, parsedData), { otpVerification: otp_for_verification, verified: true });
             request.user.otp_for_verification = "";
             request.user.is_user_verified = true;
-            yield request.user.save();
+            yield ((_c = request === null || request === void 0 ? void 0 : request.user) === null || _c === void 0 ? void 0 : _c.save());
+            yield RedisConfigurations_1.redisClusterConnection.set(`user:${(_d = request.user) === null || _d === void 0 ? void 0 : _d.registered_user_email}`, JSON.stringify(updatedUserData));
             return response.status(200).json({ success: true, message: "Email verified successfully" });
         }
         else {
-            return response.status(400).json({ Error: "Invalid OTP, please try again" });
+            return response.status(400).json({ success: false, message: "Invalid OTP" });
         }
     }
-    catch (error_value_displayed) {
-        console.error(error_value_displayed);
-        return response.status(500).json({ Error: 'Something went wrong, try again later', details: error_value_displayed.message });
+    catch (error) {
+        console.error("Error during email verification:", error);
+        return response.status(500).json({ success: false, message: 'Something went wrong, try again later', details: error.message });
     }
 });
 exports.verify_email_provided_user = verify_email_provided_user;
