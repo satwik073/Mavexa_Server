@@ -24,21 +24,21 @@ const expressServerFramework = require('express');
 const httpRequestBodyParsingLibrary = require('body-parser');
 const environmentVariableManager = require('dotenv');
 const dataCompressionMiddleware = require('compression')
-const Sentry = require("@sentry/node");
-const { nodeProfilingIntegration } = require("@sentry/profiling-node");
-import * as SentryUpdates from "@sentry/browser";
+// const Sentry = require("@sentry/node");
+// const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+// import * as SentryUpdates from "@sentry/browser";
 
-Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    integrations: [
-      nodeProfilingIntegration(),
-        SentryUpdates.replayIntegration(),
-    ],
-    tracesSampleRate: 1.0,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    profilesSampleRate: 1.0,
-})
+// Sentry.init({
+//     dsn: process.env.SENTRY_DSN,
+//     integrations: [
+//       nodeProfilingIntegration(),
+//         SentryUpdates.replayIntegration(),
+//     ],
+//     tracesSampleRate: 1.0,
+//     replaysSessionSampleRate: 0.1,
+//     replaysOnErrorSampleRate: 1.0,
+//     profilesSampleRate: 1.0,
+// })
 
 const loadEnvironmentVariablesFromConfigFile = () => {
     try {

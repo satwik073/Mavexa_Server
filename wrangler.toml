@@ -1,0 +1,17 @@
+name = "mavexa-production-server"
+main = "server.js"
+account_id = "02de86848155836fc54a3ef7329018d3"
+workers_dev = true
+compatibility_date = "2024-11-01"
+
+[build]
+command = "npm install"
+
+[env.production]
+workers_dev = false
+
+[env.staging]
+workers_dev = true
+
+[env.development]
+workers_dev = true
