@@ -143,7 +143,7 @@ const initializeAndConfigureServerApplication = async () => {
 };
 
 
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {

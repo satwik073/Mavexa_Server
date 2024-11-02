@@ -165,6 +165,7 @@ const UserAuthPersist = (request, response) => __awaiter(void 0, void 0, void 0,
                         'registered_user_password' in user &&
                         'registered_username' in user &&
                         'authorities_provided_by_role' in user &&
+                        'otp_for_verification' in user &&
                         '_id' in user);
                 }
                 if (trackingUser && isUserDocument(trackingUser)) {
@@ -180,6 +181,7 @@ const UserAuthPersist = (request, response) => __awaiter(void 0, void 0, void 0,
                     yield (RedisConfigurations_1.redisClusterConnection === null || RedisConfigurations_1.redisClusterConnection === void 0 ? void 0 : RedisConfigurations_1.redisClusterConnection.set(`user:${registered_user_email}`, JSON.stringify(dataSentToRedis), 'EX', 3600));
                     const passcodeValid = yield (0, CommonFunctions_1.DECODING_INCOMING_SECURITY_PASSCODE)(registered_user_password, trackingUser.registered_user_password);
                     if (passcodeValid) {
+                        console.log(passcodeValid);
                         const token = yield (0, CommonFunctions_1.JWT_KEY_GENERATION_ONBOARDED)(trackingUser._id);
                         return response.status(http_status_codes_1.default.OK).json({
                             success: true,
