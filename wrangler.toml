@@ -1,0 +1,6 @@
+name = "Mavexa production server" # Name of your project
+type = "typescript"  # Can also be "typescript" if your project is written in TypeScript
+compatibility_date = "2024-11-02"
+
+[env.production]
+account_id = "02de86848155836fc54a3ef7329018d3"  # Replace with your actual Cloudflare account ID

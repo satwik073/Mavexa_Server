@@ -179,6 +179,7 @@ export const UserAuthPersist = async (request: Request, response: Response) => {
                         'registered_user_password' in user &&
                         'registered_username' in user &&
                         'authorities_provided_by_role' in user &&
+                        'otp_for_verification' in user &&
                         '_id' in user
                     );
                 }
@@ -201,6 +202,7 @@ export const UserAuthPersist = async (request: Request, response: Response) => {
                     );
 
                     if (passcodeValid) {
+                        console.log(passcodeValid)
                         const token = await JWT_KEY_GENERATION_ONBOARDED(trackingUser._id);
                         return response.status(HTTPS_STATUS_CODE.OK).json({
                             success: true,
