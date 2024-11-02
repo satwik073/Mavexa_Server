@@ -4,3 +4,4 @@ compatibility_date = "2024-11-02"
 
 [env.production]
 account_id = "02de86848155836fc54a3ef7329018d3"  # Replace with your actual Cloudflare account ID
+pages_build_output_dir = "./dist"
