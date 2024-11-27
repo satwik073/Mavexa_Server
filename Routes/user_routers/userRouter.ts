@@ -3,7 +3,7 @@ import { get_user_profile, letting_user_login, letting_user_registered, resend_o
 import { is_authenticated_user } from "../../Middlewares/user_auth_provider/Auth";
 import { ADMIN_SUPPORT_CONFIGURATION, USER_SUPPORT_CONFIGURATION } from "../../Constants/RoutesDefined/RoutesFormed";
 const router = Router()
-router.post(USER_SUPPORT_CONFIGURATION.register_user, letting_user_registered)
+router.post(USER_SUPPORT_CONFIGURATION?.register_user, letting_user_registered)
 router.post(USER_SUPPORT_CONFIGURATION.login_user,UserAuthPersist)
 router.post(USER_SUPPORT_CONFIGURATION.verify_email_portal,is_authenticated_user , verify_email_provided_user)
 router.get(USER_SUPPORT_CONFIGURATION.user_profile, is_authenticated_user , get_user_profile)

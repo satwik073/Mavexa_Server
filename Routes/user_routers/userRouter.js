@@ -5,7 +5,7 @@ const userControllersGenerated_1 = require("../../Controllers/user_controllers/u
 const Auth_1 = require("../../Middlewares/user_auth_provider/Auth");
 const RoutesFormed_1 = require("../../Constants/RoutesDefined/RoutesFormed");
 const router = (0, express_1.Router)();
-router.post(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.register_user, userControllersGenerated_1.letting_user_registered);
+router.post(RoutesFormed_1.USER_SUPPORT_CONFIGURATION === null || RoutesFormed_1.USER_SUPPORT_CONFIGURATION === void 0 ? void 0 : RoutesFormed_1.USER_SUPPORT_CONFIGURATION.register_user, userControllersGenerated_1.letting_user_registered);
 router.post(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.login_user, userControllersGenerated_1.UserAuthPersist);
 router.post(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.verify_email_portal, Auth_1.is_authenticated_user, userControllersGenerated_1.verify_email_provided_user);
 router.get(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, Auth_1.is_authenticated_user, userControllersGenerated_1.get_user_profile);

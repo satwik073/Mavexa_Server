@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { DATABASE_CONNECTION_REQUEST_HANDLER, DEFAULT_EXECUTED, ERROR_VALUES_FETCHER } from "../../Constants/Errors/PreDefinedErrors";
-import RolesSpecified, { AdminDocument, AuthTypeDeclared, DatabaseExitTraceRemaining, DatabaseTrace, SuccessManager, UserAuthControllingError, UserDocument } from "../../Common/structure";
+import RolesSpecified, { AdminDocument, AuthTypeDeclared, DatabaseExitTraceRemaining, DatabaseTrace, SchemaCreationType, SuccessManager, UserAuthControllingError, UserDocument } from "../../Common/structure";
 import user_detailed_description from "../../Model/user_model/UserRegisteringModal";
 import admin_detailed_structure_description from "../../Model/admin_model/AdminDataModel";
 import mongoose from "mongoose"
 import { JWT_KEY_GENERATION_ONBOARDED } from "../../Constants/Functions/CommonFunctions";
 import { email_service_enabled } from "../../Services/EmailServices";
+import workFlowsSetting from "../../Model/WorkFlowModel/Workflows";
 export const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn: Function) => (request?: Request, response?: Response, next_function?: NextFunction) => {(request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn()}
 
 
@@ -33,6 +34,22 @@ export const EXISTING_USER_FOUND_IN_DATABASE = async (
       : exisiting_user_found;
 };
 
+
+
+export const DATA_PROCESSOR = async (payloadSent: object, dataPushingType: SchemaCreationType) => {
+  try {
+    if (dataPushingType === SchemaCreationType.__WORKFLOWS) {
+      const workflow = new workFlowsSetting(payloadSent);
+      await workflow.save();
+      return { success: true, message: 'Workflow saved successfully', workflowData: workflow };
+    } else {
+      return { success: false, message: 'Invalid schema type for workflow creation' };
+    }
+  } catch (error) {
+    console.error('Error in DATA_PROCESSOR:', error);
+    return { success: false, message: 'Error saving workflow', error };
+  }
+};
 
 
 export const DATABASE_CONDTIONALS = async (url_session: string | undefined) => {

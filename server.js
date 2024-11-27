@@ -40,6 +40,7 @@ const userRouter_1 = __importDefault(require("./Routes/user_routers/userRouter")
 const adminRoutes_1 = __importDefault(require("./Routes/admin_routes/adminRoutes"));
 const db_config_1 = __importDefault(require("./Database/MongoDB/db_config"));
 const path_1 = __importDefault(require("path"));
+const workFlowRoter_1 = __importDefault(require("./Routes/workflow_routes/workFlowRoter"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const winston_1 = __importDefault(require("winston"));
@@ -155,6 +156,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
     httpServerApplication.use(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.global_request, userRouter_1.default);
+    httpServerApplication.use('/api/v1/services/premium', workFlowRoter_1.default);
     httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });

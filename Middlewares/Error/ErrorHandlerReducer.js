@@ -35,7 +35,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TRACKING_DATA_OBJECT = exports.DATABASE_CONDTIONALS = exports.EXISTING_USER_FOUND_IN_DATABASE = exports.MISSING_FIELDS_VALIDATOR = exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = void 0;
+exports.TRACKING_DATA_OBJECT = exports.DATABASE_CONDTIONALS = exports.DATA_PROCESSOR = exports.EXISTING_USER_FOUND_IN_DATABASE = exports.MISSING_FIELDS_VALIDATOR = exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = void 0;
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
 const structure_1 = __importStar(require("../../Common/structure"));
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
@@ -43,6 +43,7 @@ const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminD
 const mongoose_1 = __importDefault(require("mongoose"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const EmailServices_1 = require("../../Services/EmailServices");
+const Workflows_1 = __importDefault(require("../../Model/WorkFlowModel/Workflows"));
 const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn) => (request, response, next_function) => { (request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn(); };
 exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = ASYNC_ERROR_HANDLER_ESTAIBLISHED;
 const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression, response, user_auth_type_specified) => {
@@ -65,6 +66,23 @@ const EXISTING_USER_FOUND_IN_DATABASE = (user_registered_email, user_auth_type_s
             : exisiting_user_found;
 });
 exports.EXISTING_USER_FOUND_IN_DATABASE = EXISTING_USER_FOUND_IN_DATABASE;
+const DATA_PROCESSOR = (payloadSent, dataPushingType) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (dataPushingType === structure_1.SchemaCreationType.__WORKFLOWS) {
+            const workflow = new Workflows_1.default(payloadSent);
+            yield workflow.save();
+            return { success: true, message: 'Workflow saved successfully', workflowData: workflow };
+        }
+        else {
+            return { success: false, message: 'Invalid schema type for workflow creation' };
+        }
+    }
+    catch (error) {
+        console.error('Error in DATA_PROCESSOR:', error);
+        return { success: false, message: 'Error saving workflow', error };
+    }
+});
+exports.DATA_PROCESSOR = DATA_PROCESSOR;
 const DATABASE_CONDTIONALS = (url_session) => __awaiter(void 0, void 0, void 0, function* () {
     if (!url_session) {
         throw new structure_1.DatabaseExitTraceRemaining(PreDefinedErrors_1.DATABASE_CONNECTION_REQUEST_HANDLER.DATABASE_CONNECTION_REQUEST(structure_1.DatabaseTrace.DEFAULT_PARAMETER).MESSAGE);
