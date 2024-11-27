@@ -1,12 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailResponseControllingError = exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.DefaultRequestMethods = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = void 0;
+exports.EmailResponseControllingError = exports.UserAuthControllingError = exports.DatabaseExitTraceRemaining = exports.SuccessManager = exports.DefaultRequestMethods = exports.VariantsType = exports.DatabaseTrace = exports.AuthTypeDeclared = exports.SchemaCreationType = void 0;
 var RolesSpecified;
 (function (RolesSpecified) {
     RolesSpecified["ADMIN_DESC"] = "admin";
     RolesSpecified["USER_DESC"] = "user";
     RolesSpecified["EMPTY"] = "Can't determine";
 })(RolesSpecified || (RolesSpecified = {}));
+var SchemaCreationType;
+(function (SchemaCreationType) {
+    SchemaCreationType["__WORKFLOWS"] = "workflow";
+})(SchemaCreationType || (exports.SchemaCreationType = SchemaCreationType = {}));
 var AuthTypeDeclared;
 (function (AuthTypeDeclared) {
     AuthTypeDeclared["USER_REGISTRATION"] = "Register";

@@ -3,6 +3,10 @@ enum RolesSpecified {
     USER_DESC = "user",
     EMPTY = `Can't determine`
 }
+
+export enum SchemaCreationType {
+    __WORKFLOWS = 'workflow',
+}
 export enum AuthTypeDeclared{
     USER_REGISTRATION  = "Register",
     USER_LOGIN = "Login"
