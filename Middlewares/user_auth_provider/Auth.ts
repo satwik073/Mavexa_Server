@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 const jwt = require('jsonwebtoken');
 import user_detailed_description from '../../Model/user_model/UserRegisteringModal';
-import RolesSpecified from '../../Common/structure';
-import { ADMIN_SUPPORT_CONFIGURATION , USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesDefined/RoutesFormed';
+import RolesSpecified, { DefaultRequestMethods } from '../../Common/structure';
+import { ADMIN_SUPPORT_CONFIGURATION , SETTINGS_INITIATED, USER_SUPPORT_CONFIGURATION } from '../../Constants/RoutesDefined/RoutesFormed';
 import admin_detailed_structure_description from '../../Model/admin_model/AdminDataModel';
 import { DEFAULT_EXECUTED } from '../../Constants/Errors/PreDefinedErrors';
 import HTTPS_STATUS_CODE from "http-status-codes";
@@ -44,7 +44,7 @@ export const is_authenticated_user = async (request: Request, response: Response
                 ? next_forward() 
                 : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
             : user?.authorities_provided_by_role === RolesSpecified.USER_DESC 
-                ? ([USER_SUPPORT_CONFIGURATION.user_profile, USER_SUPPORT_CONFIGURATION.user_reverification, USER_SUPPORT_CONFIGURATION.reset_user_password , USER_SUPPORT_CONFIGURATION.verify_email_portal , '/workflow/create'].includes(request.path) 
+                ? ([USER_SUPPORT_CONFIGURATION.user_profile, USER_SUPPORT_CONFIGURATION.user_reverification, USER_SUPPORT_CONFIGURATION.reset_user_password , USER_SUPPORT_CONFIGURATION.verify_email_portal , SETTINGS_INITIATED.generatingRouteForSchema('__WORKFLOWS', DefaultRequestMethods.POST)].includes(request.path) 
                     ? next_forward() 
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                 : response.status(403).json({ Error: "Forbidden: Invalid user role", details : DEFAULT_EXECUTED.MISSING_USER(RolesSpecified.EMPTY).MESSAGE});

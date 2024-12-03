@@ -7,13 +7,15 @@ import mongoose from "mongoose"
 import { JWT_KEY_GENERATION_ONBOARDED } from "../../Constants/Functions/CommonFunctions";
 import { email_service_enabled } from "../../Services/EmailServices";
 import workFlowsSetting from "../../Model/WorkFlowModel/Workflows";
+import HTTPS_STATUS_CODE from "http-status-codes";
+
 export const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn: Function) => (request?: Request, response?: Response, next_function?: NextFunction) => {(request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn()}
 
 
 export const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression: Record<string, any>, response: Response, user_auth_type_specified: AuthTypeDeclared) => {
   for (const [key_validator, value_validator] of Object.entries(fields_parameter_expression)) {
     if (!value_validator?.trim()) {
-      return response.status(400).json(ERROR_VALUES_FETCHER.EMPTY_FIELDS_VALIDATOR(user_auth_type_specified).MESSAGE);
+      return response.status(HTTPS_STATUS_CODE.BAD_REQUEST).json(ERROR_VALUES_FETCHER.EMPTY_FIELDS_VALIDATOR(user_auth_type_specified).MESSAGE);
     }
   }
   return null

@@ -5,7 +5,7 @@ import adminPrivilegesRouteManagement from './Routes/admin_routes/adminRoutes';
 import databaseConnectionEstablishmentProcess from './Database/MongoDB/db_config'
 import absolutePathModuleResolver from 'path';
 import { Redis } from 'ioredis';
-import WorkFlowConfigRoute from './Routes/workflow_routes/workFlowRoter'
+import WorkFlowConfigRoute from './Routes/workflow_routes/workFlowRouter'
 import httpSecurityHeadersManager from 'helmet';
 import requestRateLimitingMiddleware from 'express-rate-limit';
 import structuredLoggingFramework from 'winston';
@@ -16,7 +16,7 @@ import httpCookieProcessingMiddleware from 'cookie-parser';
 import cryptographicRandomBytesGenerator from 'crypto';
 import httpCrossOriginResourceSharingMiddleware from 'cors';
 import { DefaultRequestMethods } from './Common/structure';
-import { ADMIN_SUPPORT_CONFIGURATION, USER_SUPPORT_CONFIGURATION } from './Constants/RoutesDefined/RoutesFormed';
+import { ADMIN_SUPPORT_CONFIGURATION, DEPENDING_FORMATS, USER_SUPPORT_CONFIGURATION } from './Constants/RoutesDefined/RoutesFormed';
 import { redisClusterConnection } from './Database/RedisCacheDB/RedisConfigurations';
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
@@ -138,7 +138,7 @@ const initializeAndConfigureServerApplication = async () => {
     applicationPerformanceMonitoring.init({ dsn: process.env.SENTRY_DSN });
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
     httpServerApplication.use(USER_SUPPORT_CONFIGURATION.global_request, userManagementRoutingController);
-    httpServerApplication.use('/api/v1/services/premium', WorkFlowConfigRoute);
+    httpServerApplication.use(DEPENDING_FORMATS?.compressor("__WORKFLOWS"), WorkFlowConfigRoute);
     httpServerApplication.use(ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminPrivilegesRouteManagement);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
     
