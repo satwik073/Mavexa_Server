@@ -44,12 +44,13 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const CommonFunctions_1 = require("../../Constants/Functions/CommonFunctions");
 const EmailServices_1 = require("../../Services/EmailServices");
 const Workflows_1 = __importDefault(require("../../Model/WorkFlowModel/Workflows"));
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const ASYNC_ERROR_HANDLER_ESTAIBLISHED = (fn) => (request, response, next_function) => { (request && response && next_function) ? Promise.resolve(fn(request, response, next_function)).catch(next_function) : fn(); };
 exports.ASYNC_ERROR_HANDLER_ESTAIBLISHED = ASYNC_ERROR_HANDLER_ESTAIBLISHED;
 const MISSING_FIELDS_VALIDATOR = (fields_parameter_expression, response, user_auth_type_specified) => {
     for (const [key_validator, value_validator] of Object.entries(fields_parameter_expression)) {
         if (!(value_validator === null || value_validator === void 0 ? void 0 : value_validator.trim())) {
-            return response.status(400).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.EMPTY_FIELDS_VALIDATOR(user_auth_type_specified).MESSAGE);
+            return response.status(http_status_codes_1.default.BAD_REQUEST).json(PreDefinedErrors_1.ERROR_VALUES_FETCHER.EMPTY_FIELDS_VALIDATOR(user_auth_type_specified).MESSAGE);
         }
     }
     return null;

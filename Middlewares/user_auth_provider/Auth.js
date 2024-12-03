@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -15,7 +38,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.is_authenticated_user = void 0;
 const jwt = require('jsonwebtoken');
 const UserRegisteringModal_1 = __importDefault(require("../../Model/user_model/UserRegisteringModal"));
-const structure_1 = __importDefault(require("../../Common/structure"));
+const structure_1 = __importStar(require("../../Common/structure"));
 const RoutesFormed_1 = require("../../Constants/RoutesDefined/RoutesFormed");
 const AdminDataModel_1 = __importDefault(require("../../Model/admin_model/AdminDataModel"));
 const PreDefinedErrors_1 = require("../../Constants/Errors/PreDefinedErrors");
@@ -46,7 +69,7 @@ const is_authenticated_user = (request, response, next_forward) => __awaiter(voi
                     ? next_forward()
                     : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                 : (user === null || user === void 0 ? void 0 : user.authorities_provided_by_role) === structure_1.default.USER_DESC
-                    ? ([RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.verify_email_portal, '/workflow/create'].includes(request.path)
+                    ? ([RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_profile, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.user_reverification, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.reset_user_password, RoutesFormed_1.USER_SUPPORT_CONFIGURATION.verify_email_portal, RoutesFormed_1.SETTINGS_INITIATED.generatingRouteForSchema('__WORKFLOWS', structure_1.DefaultRequestMethods.POST)].includes(request.path)
                         ? next_forward()
                         : response.status(403).json({ Error: "Forbidden: You don't have permission to access this resource" }))
                     : response.status(403).json({ Error: "Forbidden: Invalid user role", details: PreDefinedErrors_1.DEFAULT_EXECUTED.MISSING_USER(structure_1.default.EMPTY).MESSAGE });
