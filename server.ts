@@ -117,7 +117,7 @@ const initializeAndConfigureServerApplication = async () => {
         msg: 'HTTP {{req.method}} {{req.url}}',
     }));
 
-    const corsOrigin = CORSValidator?.startsWith('https://') || CORSValidator?.startsWith('http://');
+    const corsOrigin = CORSValidator?.startsWith(`${process.env.PRODUCTION_INSTANCE}`) || CORSValidator?.startsWith('http://');
     httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
         origin: corsOrigin,
         methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
