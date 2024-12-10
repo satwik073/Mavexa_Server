@@ -60,7 +60,7 @@ databaseConnectionEstablishmentProcess();
 
 redisClusterConnection.ping((error_value : any, result: any) => {
     if (error_value) {
-        console.error('Error connecting to Redis:', error_value);
+        console.error('Error connecting to Redis Database:', error_value);
     } else {
         console.log('Connected to Redis:', result);
     }
