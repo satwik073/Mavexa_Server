@@ -118,14 +118,13 @@ const initializeAndConfigureServerApplication = async () => {
         msg: 'HTTP {{req.method}} {{req.url}}',
     }));
 
-    // const corsOrigin = CORSValidator?.startsWith(`${process.env.PRODUCTION_INSTANCE}`) || CORSValidator?.startsWith('http://') || CORSValidator?.startsWith('https://mavexa.vercel.app') || CORSValidator?.startsWith('https://');
-    // httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
-    //     origin: '*',
-    //     // origin: corsOrigin,
-    //     methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
-    //     credentials: true,
-    // }));
-    httpServerApplication.use(httpCrossOriginResourceSharingMiddleware())
+    const corsOrigin = CORSValidator?.startsWith(`${process.env.PRODUCTION_INSTANCE}`) || CORSValidator?.startsWith('http://') || CORSValidator?.startsWith('https://mavexa.vercel.app') || CORSValidator?.startsWith('https://');
+    httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
+        origin: corsOrigin,
+        methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
+        credentials: true,
+    }));
+    
     httpServerApplication.use(require('prerender-node').set('prerenderToken', process.env.PRERENDER_CONFIG_TOKEN));
     httpServerApplication.use(httpSecurityHeadersManager());
     httpServerApplication.use(dataCompressionMiddleware());
