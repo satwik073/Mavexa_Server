@@ -120,7 +120,8 @@ const initializeAndConfigureServerApplication = async () => {
 
     const corsOrigin = CORSValidator?.startsWith(`${process.env.PRODUCTION_INSTANCE}`) || CORSValidator?.startsWith('http://') || CORSValidator?.startsWith('https://mavexa.vercel.app') || CORSValidator?.startsWith('https://');
     httpServerApplication.use(httpCrossOriginResourceSharingMiddleware({
-        origin: corsOrigin,
+        origin: '*',
+        // origin: corsOrigin,
         methods: [DefaultRequestMethods.GET , DefaultRequestMethods.POST , DefaultRequestMethods.DELETE , DefaultRequestMethods.OPT , DefaultRequestMethods.PUT],
         credentials: true,
     }));
