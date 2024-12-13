@@ -53,6 +53,7 @@ const cors_1 = __importDefault(require("cors"));
 const structure_1 = require("./Common/structure");
 const RoutesFormed_1 = require("./Constants/RoutesDefined/RoutesFormed");
 const RedisConfigurations_1 = require("./Database/RedisCacheDB/RedisConfigurations");
+const TranslationRoutes_1 = __importDefault(require("./Routes/translation_routes/TranslationRoutes"));
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -92,7 +93,7 @@ loadEnvironmentVariablesFromConfigFile();
 (0, db_config_1.default)();
 RedisConfigurations_1.redisClusterConnection.ping((error_value, result) => {
     if (error_value) {
-        console.error('Error connecting to Redis:', error_value);
+        console.error('Error connecting to Redis Database:', error_value);
     }
     else {
         console.log('Connected to Redis:', result);
@@ -136,7 +137,7 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
         level: 'info',
         msg: 'HTTP {{req.method}} {{req.url}}',
     }));
-    const corsOrigin = (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('https://')) || (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('http://'));
+    const corsOrigin = (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith(`${process.env.PRODUCTION_INSTANCE}`)) || (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('http://')) || (CORSValidator === null || CORSValidator === void 0 ? void 0 : CORSValidator.startsWith('https://mavexa.vercel.app'));
     httpServerApplication.use((0, cors_1.default)({
         origin: corsOrigin,
         methods: [structure_1.DefaultRequestMethods.GET, structure_1.DefaultRequestMethods.POST, structure_1.DefaultRequestMethods.DELETE, structure_1.DefaultRequestMethods.OPT, structure_1.DefaultRequestMethods.PUT],
@@ -157,10 +158,11 @@ const initializeAndConfigureServerApplication = () => __awaiter(void 0, void 0, 
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
     httpServerApplication.use(RoutesFormed_1.USER_SUPPORT_CONFIGURATION.global_request, userRouter_1.default);
     httpServerApplication.use(RoutesFormed_1.DEPENDING_FORMATS === null || RoutesFormed_1.DEPENDING_FORMATS === void 0 ? void 0 : RoutesFormed_1.DEPENDING_FORMATS.compressor("__WORKFLOWS"), workFlowRouter_1.default);
+    httpServerApplication.use('/translation/models/config-data', TranslationRoutes_1.default);
     httpServerApplication.use(RoutesFormed_1.ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminRoutes_1.default);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
 });
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 }
 else {

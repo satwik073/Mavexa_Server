@@ -1,0 +1,14 @@
+{
+    "LabelManagement": {
+      "Main": {
+        "SelectLanguage": "Select Language",
+        "OriginalText": "Original Text",
+        "TranslatedText": "Translated Text",
+        "DataCard": {
+          "Title": "Building Scalable & High-Performance Web Applications",
+          "Description": "Passionate about building scalable, high-performance web applications using the latest technologies like React, TypeScript, Node.js, and Tailwind CSS. Continuously learning and exploring new tools to create seamless user experiences."
+        }
+      }
+    }
+  }
+  

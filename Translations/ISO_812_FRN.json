@@ -1,0 +1,17 @@
+{
+    "welcome": "Bienvenue sur notre site web",
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "home": "Accueil",
+    "about": "À propos de nous",
+    "contact": "Contact",
+    "LabelManagement": {
+        "Main": {
+            "DataCard": {
+                "Title": "Construire des applications web évolutives et performantes",
+                "Description": "Passionné par la création d'applications web évolutives et performantes en utilisant les technologies les plus récentes comme React, TypeScript, Node.js et Tailwind CSS. Apprentissage et exploration continues de nouveaux outils pour créer des expériences utilisateur transparentes."
+            }
+        },
+        "ShowingScalables": {}
+    }
+}

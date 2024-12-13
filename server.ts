@@ -18,6 +18,7 @@ import httpCrossOriginResourceSharingMiddleware from 'cors';
 import { DefaultRequestMethods } from './Common/structure';
 import { ADMIN_SUPPORT_CONFIGURATION, DEPENDING_FORMATS, USER_SUPPORT_CONFIGURATION } from './Constants/RoutesDefined/RoutesFormed';
 import { redisClusterConnection } from './Database/RedisCacheDB/RedisConfigurations';
+import translationRouter from './Routes/translation_routes/TranslationRoutes'
 const operatingSystemModule = require('os');
 const multiProcessClusterManager = require('cluster');
 const applicationPerformanceMonitoring = require("@sentry/node");
@@ -139,13 +140,14 @@ const initializeAndConfigureServerApplication = async () => {
     const activePortForServer = process.env.PORT_ESTAIBLISHED || 8000;
     httpServerApplication.use(USER_SUPPORT_CONFIGURATION.global_request, userManagementRoutingController);
     httpServerApplication.use(DEPENDING_FORMATS?.compressor("__WORKFLOWS"), WorkFlowConfigRoute);
+    httpServerApplication.use('/translation/models/config-data',translationRouter)
     httpServerApplication.use(ADMIN_SUPPORT_CONFIGURATION.admin_global_request, adminPrivilegesRouteManagement);
     httpServerApplication.listen(activePortForServer, () => console.info(`✅ Server running on port ${activePortForServer}`));
     
 };
 
 
-if (process.env.VERCEL_ENV) {
+if (!process.env.VERCEL_ENV) {
     initializeAndConfigureServerApplication();
 } else {
     if (multiProcessClusterManager.isPrimary) {
